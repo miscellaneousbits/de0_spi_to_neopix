@@ -9,11 +9,13 @@ module tb;
 wire [12:0] GPIO_2;
 wire [2:0] GPIO_2_IN;
 assign GPIO_2_IN = {SSEL, MOSI, SCK};
+reg [1:0] KEY = 2'b11;
 
 de0_spi_to_neopix uut (
 	.CLOCK_50(clk),
 	.GPIO_2(GPIO_2),
-	.GPIO_2_IN(GPIO_2_IN)
+	.GPIO_2_IN(GPIO_2_IN),
+	.KEY(KEY)
 );
    
   task do_write;
@@ -52,19 +54,22 @@ de0_spi_to_neopix uut (
 		SCK = 0;
 		MOSI = 0;
 		SSEL = 1;
+		KEY[0] = 0;
+		#100 KEY[0] = 1;
+		
 		#100 SSEL= 0;
 		do_write(8'haa);
 		do_write(8'h55);
 		do_write(0);
 		SSEL = 1;
 
-		#100 SSEL= 0;
+		#90800 SSEL= 0;
 		do_write(8'h00);
 		do_write(8'h55);
 		do_write(8'haa);
 		SSEL = 1;
 
-      #3000 $finish();
+      #100000 $finish();
    end
 
    always clk = #1 ~clk;

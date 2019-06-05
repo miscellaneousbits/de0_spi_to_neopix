@@ -6,6 +6,8 @@ module ws2812
    (
     input                              clk,          // Clock input.
     input                              reset,        // Resets the internal state of the driver
+	 
+	 output                             reset_state,
 
     /////////////////////
     // Control signals //
@@ -51,7 +53,9 @@ module ws2812
    localparam STATE_PRE      = 3'd2;
    localparam STATE_TRANSMIT = 3'd3;
    localparam STATE_POST     = 3'd4;
-   reg [2:0]                           state;              // FSM state
+   reg [2:0]                           state;              // FSM state;
+	
+	assign reset_state = state == STATE_RESET;
 
    localparam COLOR_G     = 2'd0;
    localparam COLOR_R     = 2'd1;
