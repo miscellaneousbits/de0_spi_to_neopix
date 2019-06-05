@@ -6,12 +6,11 @@ set_global_assignment -name FAMILY "Cyclone IV E"
 set_global_assignment -name DEVICE EP4CE22F17C6
 set_global_assignment -name TOP_LEVEL_ENTITY "de0_spi_to_neopix"
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "12.0"
-set_global_assignment -name LAST_QUARTUS_VERSION "12.0"
+set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Lite Edition"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "10:19:01 JUNE 05,2019"
 set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 256
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 6
-set_global_assignment -name SDC_FILE de0_spi_to_neopix.SDC
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 
 #============================================================
@@ -252,3 +251,26 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO_1[33]
 # End of pin assignments by Terasic System Builder
 #============================================================
 
+
+set_global_assignment -name SDC_FILE de0_spi_to_neopix.sdc
+set_global_assignment -name VERILOG_FILE ws2812.v
+set_global_assignment -name VERILOG_FILE spi_rx_slave_tb.v
+set_global_assignment -name VERILOG_FILE spi_rx_slave.v
+set_global_assignment -name VERILOG_FILE de0_spi_to_neopix.v
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
+set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH spi_rx_slave -section_id eda_simulation
+set_global_assignment -name EDA_TEST_BENCH_NAME spi_rx_slave -section_id eda_simulation
+set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id spi_rx_slave
+set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb -section_id spi_rx_slave
+set_global_assignment -name EDA_TEST_BENCH_FILE spi_rx_slave_tb.v -section_id spi_rx_slave
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

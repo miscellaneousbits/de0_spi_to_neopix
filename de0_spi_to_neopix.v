@@ -68,13 +68,65 @@ input 		     [1:0]		GPIO_1_IN;
 //  REG/WIRE declarations
 //=======================================================
 
+localparam NUM_LEDS = 4;
 
+reg [7:0] led_colors0[0:(NUM_LEDS * 3) - 1];
+reg [7:0] led_colors1[0:(NUM_LEDS * 3) - 1];
+reg [$clog2(NUM_LEDS * 3) - 1:0] led_color_index = 0;
+reg [$clog2(NUM_LEDS * 3):0] color_count0 = 0;
+reg [$clog2(NUM_LEDS * 3):0] color_count1 = 0;
+reg color_bank = 0;
 
+localparam SPI_STATE_IDLE = 0;
+localparam SPI_STATE_BUSY = 1;
+
+reg [1:0] spi_state = SPI_STATE_IDLE;
+
+wire [7:0] spi_data;
+wire spi_ready;
+reg [1:0] ssel = 2'b11;
+
+SPI_rx_slave rx (
+	.clk(CLOCK_50), 
+	.SCK(GPIO_2_IN[0]), 
+	.MOSI(GPIO_2_IN[1]), 
+	.MISO(GPIO_2[0]), 
+	.SSEL(ssel), 
+	.DATA(spi_data), 
+	.READY(spi_ready));
 
 //=======================================================
 //  Structural coding
 //=======================================================
 
-
+   always @ (posedge CLOCK_50) begin
+		ssel <= {ssel[0], GPIO_2_IN[2]};
+		if (spi_state == SPI_STATE_IDLE) begin
+			if (ssel == 2'b10) begin
+				led_color_index <= 0;
+				color_bank <= ~color_bank;
+				spi_state <= SPI_STATE_BUSY;
+			end
+		end
+		else if (spi_state == SPI_STATE_BUSY) begin
+			if (ssel == 2'b01)
+				spi_state <= SPI_STATE_IDLE;
+			if (spi_ready) begin
+			   case (color_bank)
+				1'b0:
+					led_colors0[led_color_index] <= spi_data;
+				1'b1:
+					led_colors1[led_color_index] <= spi_data;
+				endcase
+				led_color_index <= led_color_index + 1'b1;
+			   case (color_bank)
+				1'b0:
+					color_count0 <= led_color_index + 1'b1;
+				1'b1:
+					color_count1 <= led_color_index + 1'b1;
+				endcase
+			end
+		end
+	end
 
 endmodule

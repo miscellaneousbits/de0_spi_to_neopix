@@ -1,9 +1,9 @@
-module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY, START, END);
+module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY);
 
    input clk;
 
    input SCK, SSEL, MOSI;
-   output MISO, START, END;
+   output MISO;
 
    output [7:0] DATA;
 	output READY;
@@ -14,19 +14,16 @@ module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY, START, END);
    //wire SCK_fallingedge = (SCKr[2:1]==2'b10);  // and falling edges
 
    // same thing for SSEL
-   reg [2:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
+   reg [1:0] SSELr;
+	always @(posedge clk)
+	  SSELr <= {SSELr[0], SSEL};
    wire SSEL_active = ~SSELr[1];  // SSEL is active low
-   wire SSEL_startmessage = (SSELr[2:1]==2'b10);  // message starts at falling edge
-   wire SSEL_endmessage = (SSELr[2:1]==2'b01);  // message stops at rising edge
 	
-	assign START = SSEL_startmessage;
-	assign END = SSEL_endmessage;
-
    // and for MOSI
    reg [1:0] MOSIr;  always @(posedge clk) MOSIr <= {MOSIr[0], MOSI};
    wire MOSI_data = MOSIr[1];
 	
-	assign MISO = 1;
+	reg MISO = 1;
 
    // we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
    reg [2:0] bitcnt;
