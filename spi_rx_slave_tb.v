@@ -10,7 +10,7 @@ wire [33:0] GPIO_0;
 wire [1:0] GPIO_0_IN;
 wire [1:0] GPIO_1_IN;
 assign GPIO_0_IN = {MOSI, SCK};
-assign GPIO_1_IN[0] = SSEL;
+assign GPIO_0[2] = SSEL;
 reg [1:0] KEY = 2'b11;
 
 de0_spi_to_neopix uut (
