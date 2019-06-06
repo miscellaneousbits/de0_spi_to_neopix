@@ -5,21 +5,14 @@
 
 module de0_spi_to_neopix(
 
-	//////////// CLOCK //////////
 	input CLOCK_50,
-	//////////// LED //////////
 	output [7:0] LED,
-	//////////// KEY //////////
 	input  [1:0] KEY,
-	//////////// SW //////////
 	input  [3:0] SW,
-	//////////// 2x13 GPIO Header //////////
 	inout [12:0] GPIO_2,
 	input  [2:0] GPIO_2_IN,
-	//////////// GPIO_0, GPIO_0 connect to GPIO Default //////////
 	inout [33:0] GPIO_0,
 	input  [1:0] GPIO_0_IN,
-	//////////// GPIO_1, GPIO_1 connect to GPIO Default //////////
 	inout [33:0] GPIO_1,
 	input  [1:0] GPIO_1_IN 
 );
@@ -27,15 +20,12 @@ module de0_spi_to_neopix(
 
 reg [7:0] led = 8'hff;
 assign LED = led;
-reg [33:0] gpio_0 = 0;
-assign GPIO_0 = gpio_0;
-assign GPIO_1 = gpio_0;
 
 //=======================================================
 //  REG/WIRE declarations
 //=======================================================
 
-localparam NUM_LEDS = 256;
+localparam NUM_LEDS = 8;
 
 reg [7:0] led_colors0[0:(NUM_LEDS * 3) - 1];
 reg [7:0] led_colors1[0:(NUM_LEDS * 3) - 1];
@@ -53,12 +43,20 @@ wire [7:0] spi_data;
 wire spi_ready;
 reg [1:0] ssel = 2'b11;
 
+wire sck, mosi, miso, sel, ws_do;
+assign sck = GPIO_0_IN[0];
+assign mosi = GPIO_0_IN[1];
+assign sel = GPIO_1_IN[0];
+assign GPIO_0[0] = miso;
+assign GPIO_0[1] = ws_do;
+
+assign miso = 1;
+
 SPI_rx_slave rx (
 	.clk(CLOCK_50), 
-	.SCK(GPIO_2_IN[0]), 
-	.MOSI(GPIO_2_IN[1]), 
-	.MISO(GPIO_2[0]), 
-	.SSEL(ssel), 
+	.SCK(sck), 
+	.MOSI(mosi), 
+	.SSEL(sel), 
 	.DATA(spi_data), 
 	.READY(spi_ready));
 	
@@ -67,7 +65,7 @@ SPI_rx_slave rx (
 //=======================================================
 
    always @ (posedge CLOCK_50) begin
-		ssel <= {ssel[0], GPIO_2_IN[2]};
+		ssel <= {ssel[0], sel};
 		if (spi_state == SPI_STATE_IDLE) begin
 			if (ssel == 2'b10) begin
 				led_color_index <= 0;
@@ -109,7 +107,7 @@ ws2812
     .NUM_LEDS(NUM_LEDS),          // The number of LEDS in the chain
 	 .SYSTEM_CLOCK(50000000)
     )
-pixels
+WS
    (
     .clk(CLOCK_50),  // Clock input.
     .reset(~KEY[0]),        // Resets the internal state of the driver
@@ -120,10 +118,8 @@ pixels
     .red_in(redr),       // 8-bit red data
     .green_in(greenr),     // 8-bit green data
     .blue_in(bluer),      // 8-bit blue data
-    .DO(GPIO_2[1])           // Signal to send to WS2811 chain.
-    );
-	 
-	 
+    .DO(ws_do)           // Signal to send to WS2811 chain.
+    );	 
 
    always @ (posedge CLOCK_50) begin
 	   if (reset_state)

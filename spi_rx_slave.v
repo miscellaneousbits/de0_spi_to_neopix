@@ -1,9 +1,8 @@
-module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY);
+module SPI_rx_slave(clk, SCK, MOSI, SSEL, DATA, READY);
 
    input clk;
 
    input SCK, SSEL, MOSI;
-   output MISO;
 
    output [7:0] DATA;
 	output READY;
@@ -14,17 +13,13 @@ module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY);
    //wire SCK_fallingedge = (SCKr[2:1]==2'b10);  // and falling edges
 
    // same thing for SSEL
-   reg [1:0] SSELr;
-	always @(posedge clk)
-	  SSELr <= {SSELr[0], SSEL};
+   reg [2:0] SSELr;  always @(posedge clk) SSELr <= {SSELr[1:0], SSEL};
    wire SSEL_active = ~SSELr[1];  // SSEL is active low
 	
    // and for MOSI
    reg [1:0] MOSIr;  always @(posedge clk) MOSIr <= {MOSIr[0], MOSI};
    wire MOSI_data = MOSIr[1];
 	
-	reg MISO = 1;
-
    // we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
    reg [2:0] bitcnt;
 
@@ -59,3 +54,4 @@ module SPI_rx_slave(clk, SCK, MOSI, MISO, SSEL, DATA, READY);
 		 
 
 endmodule
+
