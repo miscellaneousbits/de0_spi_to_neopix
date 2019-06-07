@@ -14,7 +14,7 @@ assign GPIO_0[2] = SSEL;
 reg [1:0] KEY = 2'b11;
 
 de0_spi_to_neopix #(
-	.NUM_LEDS(4)
+	.NUM_LEDS(8)
 	)
 uut (
 	.CLOCK_50(clk),

@@ -27,12 +27,12 @@ assign LED = de0_led;
 //=======================================================
 
 //parameter NUM_LEDS = 256;
-parameter NUM_LEDS = 16;
+parameter NUM_LEDS = 256;
 
-reg [23:0] led[0:(NUM_LEDS * 2) - 1];
 reg [$clog2(NUM_LEDS):0] led_count[0:1];
 
-reg [$clog2(NUM_LEDS) - 1:0] spi_led_index = 0;
+reg [$clog2(NUM_LEDS) - 1:0] spi_addr = 0;
+reg [$clog2(NUM_LEDS) - 1:0] spi_addr1 = 0;
 reg [1:0] spi_byte_index;
 reg spi_bank = 0;
 
@@ -42,10 +42,30 @@ localparam SPI_STATE_BUSY = 1;
 reg [1:0] spi_state = SPI_STATE_IDLE;
 
 wire [7:0] spi_data;
-reg [15:0] spi_word;
+reg [23:0] spi_word;
 wire spi_ready;
 reg [1:0] ssel = 2'b11;
 
+wire [$clog2(NUM_LEDS):0] spi_banked_addr = spi_addr1 + (spi_bank ? NUM_LEDS : 0);
+reg wren = 0;
+
+reg ws_bank = 1;
+wire [$clog2(NUM_LEDS) - 1:0] ws_addr;
+wire [$clog2(NUM_LEDS):0] ws_banked_addr = ws_addr + (ws_bank ? NUM_LEDS : 0);
+wire [31:0] q;
+
+dual_port_ram	#(
+	.NUM_LEDS(NUM_LEDS)
+	)
+ram (
+	.clock (CLOCK_50),
+	.data ({8'b0, spi_word}),
+	.rdaddress ({8'b0, ws_banked_addr}),
+	.wraddress ({8'b0, spi_banked_addr}),
+	.wren (wren),
+	.q (q)
+	);
+	
 wire sck, mosi, miso, sel, ws_do;
 assign sck = GPIO_0_IN[0];
 assign mosi = GPIO_0_IN[1];
@@ -69,33 +89,38 @@ SPI_rx_slave rx (
 //=======================================================
 
    always @ (posedge CLOCK_50) begin
+		spi_addr1 <= spi_addr;
 		ssel <= {ssel[0], sel};
+		if (wren)
+			wren <= 0;
 		if (spi_state == SPI_STATE_IDLE) begin
 			if (ssel == 2'b10) begin
-				spi_led_index <= 0;
+				spi_addr <= 0;
 				spi_byte_index <= 0;
 				led_count[~spi_bank] = 0;
-				spi_bank <= ~spi_bank;
 				spi_state <= SPI_STATE_BUSY;
+				spi_bank <= ~spi_bank;
 			end
 		end
 		else /* if (spi_state == SPI_STATE_BUSY) */ begin
-			if (ssel == 2'b01)
+			if (ssel == 2'b01) begin
 				spi_state <= SPI_STATE_IDLE;
-			if (spi_ready && (spi_led_index < NUM_LEDS)) begin
+			end				
+			if (spi_ready && (spi_addr < NUM_LEDS)) begin
 				case (spi_byte_index)
 					0: begin
 						spi_byte_index <= 1;
-						spi_word[15:8] <= spi_data;
+						spi_word[23:16] <= spi_data;
 					end
 					1: begin
 						spi_byte_index <= 2;
-						spi_word[7:0] <= spi_data;
+						spi_word[15:8] <= spi_data;
 					end
 					2: begin
-						led[spi_led_index + (spi_bank ? 0 : NUM_LEDS)] <= {spi_word, spi_data};
+						spi_word[7:0] <= spi_data;
+						wren <= 1;
 						spi_byte_index <= 0;
-						spi_led_index <= spi_led_index + 1'b1;
+						spi_addr <= spi_addr + 1'b1;
 						led_count[spi_bank] <= led_count[spi_bank] + 1'b1;
 					end
 				endcase
@@ -105,10 +130,8 @@ SPI_rx_slave rx (
 
 reg [7:0] redr, greenr, bluer;
 wire ws_data_req, ws_new_addr;
-wire [$clog2(NUM_LEDS) - 1:0] ws_addr;
 wire [$clog2(NUM_LEDS * 3):0] ws_count;
-assign ws_count = led_count[spi_bank];
-reg ws_bank = 0;
+assign ws_count = led_count[ws_bank];
 wire reset_state;
 
 ws2812
@@ -119,7 +142,6 @@ ws2812
 WS
    (
     .clk(CLOCK_50),  // Clock input.
-    .reset(~KEY[0]),        // Resets the internal state of the driver
 	 .reset_state(reset_state),
 	 .data_request(ws_data_req), // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
     .new_address(ws_new_addr),  // This signal is asserted whenever the address signal is updated to its new value.
@@ -135,16 +157,17 @@ WS
 			ws_bank <= spi_bank;
 		if (ws_data_req) begin
 			if (ws_addr < ws_count) begin
-				greenr = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][23:16];
-				redr = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][15:8];
-				bluer = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][7:0];
+				greenr <= q[23:16];
+				redr <= q[15:8];
+				bluer <= q[7:0];
 			end
 			else begin
-				greenr = 0;
-				redr = 0;
-				bluer = 0;
+				greenr <= 0;
+				redr <= 0;
+				bluer <= 0;
 			end
 		end
 	end
 
 endmodule
+
