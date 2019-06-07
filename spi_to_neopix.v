@@ -1,6 +1,7 @@
 module spi_to_neopix(
 
 	input CLK,
+	input RESET,
 	input SCK,
 	input MOSI,
 	input SSEL,
@@ -52,7 +53,8 @@ ram (
 	);
 	
 SPI_rx_slave rx (
-	.clk(CLK), 
+	.clk(CLK),
+	.reset(RESET),
 	.SCK(SCK), 
 	.MOSI(MOSI), 
 	.SSEL(SSEL), 
@@ -117,6 +119,7 @@ ws2812
 WS
    (
     .clk(CLK),  // Clock input.
+	 .reset(RESET),
 	 .reset_state(reset_state),
 	 .data_request(ws_data_req), // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
     .new_address(ws_new_addr),  // This signal is asserted whenever the address signal is updated to its new value.

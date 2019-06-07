@@ -5,6 +5,7 @@ module ws2812
     )
    (
     input                              clk,          // Clock input.
+	 input										reset,
 	 
 	 output                             reset_state,
 
@@ -76,11 +77,9 @@ module ws2812
 
    assign data_request = reset_almost_done || led_almost_done;
    assign new_address  = (state == STATE_PRE) && (current_bit == 7);
-	reg reset = 1;
    
    always @ (posedge clk) begin
       if (reset) begin
-			reset <= 0;
          address <= 0;
          state <= STATE_RESET;
          DO <= 0;

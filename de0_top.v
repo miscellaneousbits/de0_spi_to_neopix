@@ -20,7 +20,7 @@ module de0_top (
 	input  [1:0] GPIO_1_IN 
 );
 
-parameter NUM_LEDS = 8;
+parameter NUM_LEDS = 256;
 
 assign GPIO_0[1] = 1'bz;
 assign GPIO_0[2] = 1'bz;
@@ -38,17 +38,25 @@ assign GPIO_0[33:5] = 0;
 
 assign `miso = 1;
 
-reg [31:0] clk_count= 0;
-assign LED = clk_count[31:24];
+reg [29:0] clk_count= 0;
+assign LED = clk_count[29:22];
+wire reset = ~KEY[0];
 
-always @ (posedge CLOCK_50)
-	clk_count <= clk_count + 1'b1;
+
+always @ (posedge CLOCK_50) begin
+	if (reset)
+		clk_count <= 0;
+	else
+		clk_count <= clk_count + 1'b1;
+end
+
 
 spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
 neo0 (
 	.CLK(CLOCK_50),
+	.RESET(reset),
 	.SCK(`sck),
 	.MOSI(`mosi),
 	.SSEL(`sel0),
@@ -61,11 +69,13 @@ spi_to_neopix #(
 	)
 neo1 (
 	.CLK(CLOCK_50),
+	.RESET(reset),
 	.SCK(`sck),
 	.MOSI(`mosi),
 	.SSEL(`sel1),
 	.DO(`do1)
 );
+
 
 endmodule
 
