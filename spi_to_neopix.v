@@ -1,4 +1,4 @@
-module de0_spi_to_neopix(
+module spi_to_neopix(
 
 	input CLK,
 	input SCK,

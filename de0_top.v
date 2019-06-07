@@ -24,6 +24,9 @@ parameter NUM_LEDS = 8;
 
 assign GPIO_0[1] = 1'bz;
 assign GPIO_0[2] = 1'bz;
+assign GPIO_2 = 0;
+assign GPIO_1 = 0;
+assign GPIO_0[33:5] = 0;
 
 `define sck  GPIO_0_IN[0]
 `define mosi GPIO_0_IN[1]
@@ -33,9 +36,15 @@ assign GPIO_0[2] = 1'bz;
 `define do0 GPIO_0[3]
 `define do1 GPIO_0[4]
 
-assign miso = 1;
+assign `miso = 1;
 
-de0_spi_to_neopix #(
+reg [31:0] clk_count= 0;
+assign LED = clk_count[31:24];
+
+always @ (posedge CLOCK_50)
+	clk_count <= clk_count + 1'b1;
+
+spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
 neo0 (
@@ -47,7 +56,7 @@ neo0 (
 );
 
 
-de0_spi_to_neopix #(
+spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
 neo1 (

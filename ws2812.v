@@ -90,6 +90,7 @@ module ws2812
       end
       else begin
          case (state)
+			
            STATE_RESET: begin
               // De-assert DO, and wait for 75 us.
               DO <= 0;
@@ -100,11 +101,11 @@ module ws2812
               else begin
                  reset_counter <= reset_counter + 1'b1;
               end
-           end // case: STATE_RESET
+           end
+			  
            STATE_LATCH: begin
               // Latch the input
               red <= red_in;
-//              green <= green_in;
               blue <= blue_in;
 
               // Setup the new address
@@ -117,24 +118,24 @@ module ws2812
               
               state <= STATE_PRE;
            end
+			  
            STATE_PRE: begin
               // Assert DO, start clock divider counter
               clock_div <= 0;
               DO <= 1;
               state <= STATE_TRANSMIT;
            end
+			  
            STATE_TRANSMIT: begin
               // De-assert DO after a certain amount of time, depending on if you're transmitting a 1 or 0.
-              if (current_byte[7] == 0 && clock_div >= H0_CYCLE_COUNT)
-                 DO <= 0;
-              if (current_byte[7] == 1 && clock_div >= H1_CYCLE_COUNT)
+              if ((current_byte[7] == 0 && clock_div >= H0_CYCLE_COUNT) || (current_byte[7] == 1 && clock_div >= H1_CYCLE_COUNT))
                  DO <= 0;
               // Advance cycle counter
               if (clock_div == CYCLE_COUNT-1)
                  state <= STATE_POST;
-				  else
-                 clock_div <= clock_div + 1'b1;
+              clock_div <= clock_div + 1'b1;
            end
+			  
            STATE_POST: begin
               if (current_bit != 0) begin
                  // Start sending next bit of data
@@ -166,9 +167,10 @@ module ws2812
                          state <= STATE_LATCH;
                       end
                    end
-                 endcase // case (color)
+                 endcase
               end
            end
+			  
          endcase
       end
    end

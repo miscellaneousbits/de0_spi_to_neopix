@@ -69,6 +69,9 @@ de0_top uut (
 		do_write(8'haa);
 		do_write(8'h55);
 		do_write(0);
+		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
 		SSEL0 = 1;
 
 		#90800 SSEL0 = 0;
@@ -78,6 +81,9 @@ de0_top uut (
 		SSEL0 = 1;
 
 		#100 SSEL1 = 0;
+		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
 		do_write(8'haa);
 		do_write(8'h55);
 		do_write(0);
