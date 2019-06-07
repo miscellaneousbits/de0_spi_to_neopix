@@ -12,8 +12,7 @@ module spi_to_neopix(
 //  REG/WIRE declarations
 //=======================================================
 
-//parameter NUM_LEDS = 256;
-parameter NUM_LEDS = 256;
+parameter NUM_LEDS = 8;
 
 reg [$clog2(NUM_LEDS):0] led_count[0:1];
 
