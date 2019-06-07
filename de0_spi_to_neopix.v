@@ -1,26 +1,12 @@
-// sck  IO_0_IN[0]
-// mosi IO_0_IN[1]
-// miso IO_0[0]
-// ssel IO_0[2]
-// DO   IO_0[1]
-
 module de0_spi_to_neopix(
 
-	input CLOCK_50,
-	output [7:0] LED,
-	input  [1:0] KEY,
-	input  [3:0] SW,
-	inout [12:0] GPIO_2,
-	input  [2:0] GPIO_2_IN,
-	inout [33:0] GPIO_0,
-	input  [1:0] GPIO_0_IN,
-	inout [33:0] GPIO_1,
-	input  [1:0] GPIO_1_IN 
+	input CLK,
+	input SCK,
+	input MOSI,
+	input SSEL,
+	output DO
 );
 
-
-reg [7:0] de0_led = 8'hff;
-assign LED = de0_led;
 
 //=======================================================
 //  REG/WIRE declarations
@@ -58,7 +44,7 @@ dual_port_ram	#(
 	.NUM_LEDS(NUM_LEDS)
 	)
 ram (
-	.clock (CLOCK_50),
+	.clock (CLK),
 	.data ({8'b0, spi_word}),
 	.rdaddress ({8'b0, ws_banked_addr}),
 	.wraddress ({8'b0, spi_banked_addr}),
@@ -66,21 +52,11 @@ ram (
 	.q (q)
 	);
 	
-wire sck, mosi, miso, sel, ws_do;
-assign sck = GPIO_0_IN[0];
-assign mosi = GPIO_0_IN[1];
-assign GPIO_0[2] = 1'bz;
-assign sel = GPIO_0[2];
-assign GPIO_0[0] = miso;
-assign GPIO_0[1] = ws_do;
-
-assign miso = 1;
-
 SPI_rx_slave rx (
-	.clk(CLOCK_50), 
-	.SCK(sck), 
-	.MOSI(mosi), 
-	.SSEL(sel), 
+	.clk(CLK), 
+	.SCK(SCK), 
+	.MOSI(MOSI), 
+	.SSEL(SSEL), 
 	.DATA(spi_data), 
 	.READY(spi_ready));
 	
@@ -88,9 +64,9 @@ SPI_rx_slave rx (
 //  Structural coding
 //=======================================================
 
-   always @ (posedge CLOCK_50) begin
+   always @ (posedge CLK) begin
 		spi_addr1 <= spi_addr;
-		ssel <= {ssel[0], sel};
+		ssel <= {ssel[0], SSEL};
 		if (wren)
 			wren <= 0;
 		if (spi_state == SPI_STATE_IDLE) begin
@@ -141,7 +117,7 @@ ws2812
     )
 WS
    (
-    .clk(CLOCK_50),  // Clock input.
+    .clk(CLK),  // Clock input.
 	 .reset_state(reset_state),
 	 .data_request(ws_data_req), // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
     .new_address(ws_new_addr),  // This signal is asserted whenever the address signal is updated to its new value.
@@ -149,10 +125,10 @@ WS
     .red_in(redr),       // 8-bit red data
     .green_in(greenr),     // 8-bit green data
     .blue_in(bluer),      // 8-bit blue data
-    .DO(ws_do)           // Signal to send to WS2811 chain.
+    .DO(DO)           // Signal to send to WS2811 chain.
     );	 
 
-   always @ (posedge CLOCK_50) begin
+   always @ (posedge CLK) begin
 	   if (reset_state)
 			ws_bank <= spi_bank;
 		if (ws_data_req) begin
