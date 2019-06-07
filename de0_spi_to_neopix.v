@@ -19,21 +19,22 @@ module de0_spi_to_neopix(
 );
 
 
-reg [7:0] led = 8'hff;
-assign LED = led;
+reg [7:0] de0_led = 8'hff;
+assign LED = de0_led;
 
 //=======================================================
 //  REG/WIRE declarations
 //=======================================================
 
-localparam NUM_LEDS = 8;
+//parameter NUM_LEDS = 256;
+parameter NUM_LEDS = 16;
 
-reg [7:0] led_colors0[0:(NUM_LEDS * 3) - 1];
-reg [7:0] led_colors1[0:(NUM_LEDS * 3) - 1];
-reg [$clog2(NUM_LEDS * 3) - 1:0] led_color_index = 0;
-reg [$clog2(NUM_LEDS * 3):0] color_count0 = 0;
-reg [$clog2(NUM_LEDS * 3):0] color_count1 = 0;
-reg color_bank = 0;
+reg [23:0] led[0:(NUM_LEDS * 2) - 1];
+reg [$clog2(NUM_LEDS):0] led_count[0:1];
+
+reg [$clog2(NUM_LEDS) - 1:0] spi_led_index = 0;
+reg [1:0] spi_byte_index;
+reg spi_bank = 0;
 
 localparam SPI_STATE_IDLE = 0;
 localparam SPI_STATE_BUSY = 1;
@@ -41,6 +42,7 @@ localparam SPI_STATE_BUSY = 1;
 reg [1:0] spi_state = SPI_STATE_IDLE;
 
 wire [7:0] spi_data;
+reg [15:0] spi_word;
 wire spi_ready;
 reg [1:0] ssel = 2'b11;
 
@@ -70,27 +72,32 @@ SPI_rx_slave rx (
 		ssel <= {ssel[0], sel};
 		if (spi_state == SPI_STATE_IDLE) begin
 			if (ssel == 2'b10) begin
-				led_color_index <= 0;
-				color_bank <= ~color_bank;
+				spi_led_index <= 0;
+				spi_byte_index <= 0;
+				led_count[~spi_bank] = 0;
+				spi_bank <= ~spi_bank;
 				spi_state <= SPI_STATE_BUSY;
 			end
 		end
 		else /* if (spi_state == SPI_STATE_BUSY) */ begin
 			if (ssel == 2'b01)
 				spi_state <= SPI_STATE_IDLE;
-			if (spi_ready && (led_color_index < NUM_LEDS)) begin
-				case (color_bank)
-				1'b0:
-					led_colors0[led_color_index] <= spi_data;
-				1'b1:
-					led_colors1[led_color_index] <= spi_data;
-				endcase
-				led_color_index <= led_color_index + 1'b1;
-				case (color_bank)
-				1'b0:
-					color_count0 <= led_color_index + 1'b1;
-				1'b1:
-					color_count1 <= led_color_index + 1'b1;
+			if (spi_ready && (spi_led_index < NUM_LEDS)) begin
+				case (spi_byte_index)
+					0: begin
+						spi_byte_index <= 1;
+						spi_word[15:8] <= spi_data;
+					end
+					1: begin
+						spi_byte_index <= 2;
+						spi_word[7:0] <= spi_data;
+					end
+					2: begin
+						led[spi_led_index + (spi_bank ? 0 : NUM_LEDS)] <= {spi_word, spi_data};
+						spi_byte_index <= 0;
+						spi_led_index <= spi_led_index + 1'b1;
+						led_count[spi_bank] <= led_count[spi_bank] + 1'b1;
+					end
 				endcase
 			end
 		end
@@ -100,7 +107,7 @@ reg [7:0] redr, greenr, bluer;
 wire ws_data_req, ws_new_addr;
 wire [$clog2(NUM_LEDS) - 1:0] ws_addr;
 wire [$clog2(NUM_LEDS * 3):0] ws_count;
-assign ws_count = color_bank ? color_count1 : color_count0;
+assign ws_count = led_count[spi_bank];
 reg ws_bank = 0;
 wire reset_state;
 
@@ -125,21 +132,12 @@ WS
 
    always @ (posedge CLOCK_50) begin
 	   if (reset_state)
-			ws_bank <= color_bank;
+			ws_bank <= spi_bank;
 		if (ws_data_req) begin
-			if (ws_addr * 3 < ws_count) begin
-				case (ws_bank)
-				1'b0: begin
-					greenr = led_colors0[ws_addr * 3];
-					redr = led_colors0[ws_addr * 3 + 1];
-					bluer = led_colors0[ws_addr * 3 + 2];
-				end
-				1'b1: begin
-					greenr = led_colors1[ws_addr * 3];
-					redr = led_colors1[ws_addr * 3 + 1];
-					bluer = led_colors1[ws_addr * 3 + 2];
-				end
-				endcase
+			if (ws_addr < ws_count) begin
+				greenr = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][23:16];
+				redr = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][15:8];
+				bluer = led[ws_addr + (ws_bank ? 0 : NUM_LEDS)][7:0];
 			end
 			else begin
 				greenr = 0;

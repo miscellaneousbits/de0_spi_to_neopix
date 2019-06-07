@@ -13,7 +13,10 @@ assign GPIO_0_IN = {MOSI, SCK};
 assign GPIO_0[2] = SSEL;
 reg [1:0] KEY = 2'b11;
 
-de0_spi_to_neopix uut (
+de0_spi_to_neopix #(
+	.NUM_LEDS(4)
+	)
+uut (
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
 	.GPIO_0_IN(GPIO_0_IN),
