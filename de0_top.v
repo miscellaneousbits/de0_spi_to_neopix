@@ -40,7 +40,9 @@ assign `miso = 1;
 
 reg [29:0] clk_count= 0;
 assign LED = clk_count[29:22];
-wire reset = ~KEY[0];
+localparam RESET_CLKS = 50000000;
+reg [$clog2(RESET_CLKS) - 1:0] reset_count = RESET_CLKS;
+wire reset = ~KEY[0] || reset_count;
 
 
 always @ (posedge CLOCK_50) begin
@@ -48,6 +50,8 @@ always @ (posedge CLOCK_50) begin
 		clk_count <= 0;
 	else
 		clk_count <= clk_count + 1'b1;
+	if (reset_count)
+		reset_count <= reset_count - 1'b1;
 end
 
 
