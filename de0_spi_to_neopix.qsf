@@ -278,7 +278,6 @@ set_global_assignment -name VERILOG_FILE de0_top.v
 set_global_assignment -name SYNTH_MESSAGE_LEVEL HIGH
 set_global_assignment -name CDF_FILE EPCS64.cdf
 set_global_assignment -name VERILOG_FILE stretch.v
-set_global_assignment -name VERILOG_FILE stretch_tb.v
 set_global_assignment -name EDA_TEST_BENCH_NAME stretch -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id stretch
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME tb2 -section_id stretch

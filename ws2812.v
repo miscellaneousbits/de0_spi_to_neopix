@@ -1,30 +1,18 @@
-module ws2812 #(
-    parameter NUM_LEDS          = 4,          // The number of LEDS in the chain
-    parameter SYSTEM_CLOCK      = 50000000    // The frequency of the input clock signal, in Hz. This value must be correct in order to have correct timing for the WS2811 protocol.
-    )
-   (
+module ws2812 (
     input                              clk,          // Clock input.
-	 input										reset,
-	 
 	 output                             reset_state,
-
-    /////////////////////
-    // Control signals //
-    /////////////////////
     output                             data_request, // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
     output                             new_address,  // This signal is asserted whenever the address signal is updated to its new value.
     output reg [$clog2(NUM_LEDS)-1:0] address,      // The current LED number. This signal is incremented to the next value two cycles after the last time data_request was asserted.
-    
     input [7:0]                        red_in,       // 8-bit red data
     input [7:0]                        green_in,     // 8-bit green data
     input [7:0]                        blue_in,      // 8-bit blue data
-    
-    ////////////////////
-    // External ports //
-    ////////////////////
     output reg                         DO            // Signal to send to WS2811 chain.
     );
-   
+
+parameter NUM_LEDS          = 8;          // The number of LEDS in the chain
+parameter SYSTEM_CLOCK      = 50000000;   // The frequency of the input clock signal, in Hz. This value must be correct in order to have correct timing for the WS2811 protocol.
+	 
 localparam integer LED_ADDRESS_WIDTH = $clog2(NUM_LEDS);         // Number of bits to use for address input
 
 /////////////////////////////////////////////////////////////
@@ -76,9 +64,11 @@ assign led_almost_done   = (state == STATE_POST)  && (color == COLOR_B) && (curr
 
 assign data_request = reset_almost_done || led_almost_done;
 assign new_address  = (state == STATE_PRE) && (current_bit == 7);
+	reg reset = 1;
 
 always @ (posedge clk) begin
 	if (reset) begin
+			reset <= 0;
 		address <= 0;
 		state <= STATE_RESET;
 		DO <= 0;

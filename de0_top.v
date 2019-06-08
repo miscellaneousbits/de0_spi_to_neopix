@@ -22,46 +22,48 @@ module de0_top (
 
 parameter NUM_LEDS = 256;
 
-assign GPIO_0[1] = 1'bz;
-assign GPIO_0[2] = 1'bz;
+assign GPIO_0[1] = 'bz;
+assign GPIO_0[2] = 'bz;
 assign GPIO_2 = 'bz;
 assign GPIO_1 = 'bz;
 assign GPIO_0[33:5] = 'bz;
 
 wire sck = GPIO_0_IN[0];
 wire mosi = GPIO_0_IN[1];
-wire miso = GPIO_0[0];
 wire sel0 = GPIO_0[1];
 wire sel1 = GPIO_0[2];
-wire do0 = GPIO_0[3];
-wire do1 = GPIO_0[4];
 
-assign miso = 1;
+wire do0, do1;
+wire miso = 1;
 
-localparam RESET_CLKS = 63;
-reg [$clog2(RESET_CLKS + 1) - 1:0] clk_count = 0;
-assign LED[6:2] = 0;
+reg [31:0] clk_count= 0;
 assign LED[7] = 1;
+assign LED[6:2] = 0;
+assign GPIO_0[0] = miso;
+assign GPIO_0[3] = do0;
+assign GPIO_0[4] = do1;
 
-reg [1:0] led = 0;
-assign LED[1:0] = led;
+stretch s0 (
+	.clk(CLOCK_50),
+	.in(~sel0 || ~KEY[1]),
+	.out(LED[0])
+	);
 
-wire reset = ~KEY[0] || (clk_count < RESET_CLKS);
+stretch s1 (
+	.clk(CLOCK_50),
+	.in(~sel1 || ~KEY[1]),
+	.out(LED[1])
+	);
 
 always @ (posedge CLOCK_50) begin
-	led[0] <= sel0;
-	led[1] <= sel1;
-	if (clk_count < RESET_CLKS)
-		clk_count <= clk_count + 1'b1;
+	clk_count <= clk_count + 1'b1;
 end
-
 
 spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
 neo0 (
 	.CLK(CLOCK_50),
-	.RESET(reset),
 	.SCK(sck),
 	.MOSI(mosi),
 	.SSEL(sel0),
@@ -74,13 +76,11 @@ spi_to_neopix #(
 	)
 neo1 (
 	.CLK(CLOCK_50),
-	.RESET(reset),
 	.SCK(sck),
 	.MOSI(mosi),
 	.SSEL(sel1),
 	.DO(do1)
 );
-
 
 endmodule
 

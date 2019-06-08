@@ -24,8 +24,7 @@ assign GPIO_0[2] = SSEL1;
 de0_top uut (
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
-	.GPIO_0_IN(GPIO_0_IN),
-	.KEY(2'b11)
+	.GPIO_0_IN(GPIO_0_IN)
 );
    
   task do_write;

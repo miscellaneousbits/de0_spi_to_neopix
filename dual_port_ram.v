@@ -7,8 +7,6 @@ module dual_port_ram (
 	output	[31:0]  q
 	);
 
-parameter NUM_LEDS = 8;
-
 altsyncram	#(
 	.address_aclr_b("NONE"),
 	.address_reg_b("CLOCK0"),
