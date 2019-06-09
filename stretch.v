@@ -5,7 +5,7 @@ module stretch (
 	);
 	
 parameter SYSTEM_CLOCK = 50000000;
-parameter MIN_DURATION_MS = SYSTEM_CLOCK / 4;
+parameter MIN_DURATION_MS = SYSTEM_CLOCK / 8;
 
 reg out_r;
 assign out = out_r;
