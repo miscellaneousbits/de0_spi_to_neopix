@@ -8,10 +8,6 @@ module spi_to_neopix(
 );
 
 
-//=======================================================
-//  REG/WIRE declarations
-//=======================================================
-
 parameter NUM_LEDS = 8;
 
 reg [$clog2(NUM_LEDS):0] led_count[0:1];
@@ -39,7 +35,7 @@ wire [$clog2(NUM_LEDS) - 1:0] ws_addr;
 wire [$clog2(NUM_LEDS):0] ws_banked_addr = ws_addr + (ws_bank ? NUM_LEDS : 0);
 wire [31:0] q;
 
-dual_port_ram	ram (
+dual_port_ram dual_port_ram_inst (
 	.clock (CLK),
 	.data ({8'b0, spi_word}),
 	.rdaddress ({8'b0, ws_banked_addr}),
@@ -48,18 +44,15 @@ dual_port_ram	ram (
 	.q (q)
 	);
 	
-SPI_rx_slave rx (
+SPI_rx_slave SPI_rx_slave_inst (
 	.clk(CLK),
 	.SCK(SCK), 
 	.MOSI(MOSI), 
 	.SSEL(SSEL), 
 	.DATA(spi_data), 
-	.READY(spi_ready));
+	.READY(spi_ready)
+	);
 	
-//=======================================================
-//  Structural coding
-//=======================================================
-
 always @ (posedge CLK) begin
 	spi_addr1 <= spi_addr;
 	ssel <= {ssel[0], SSEL};
@@ -107,20 +100,21 @@ assign ws_count = led_count[ws_bank];
 wire reset_state;
 
 ws2812 #(
-    .NUM_LEDS(NUM_LEDS),          // The number of LEDS in the chain
-	 .SYSTEM_CLOCK(50000000)
-    )
-WS (
-    .clk(CLK),  // Clock input.
-	 .reset_state(reset_state),
-	 .data_request(ws_data_req), // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
-    .new_address(ws_new_addr),  // This signal is asserted whenever the address signal is updated to its new value.
-    .address(ws_addr),      // The current LED number. This signal is incremented to the next value two cycles after the last time data_request was asserted.
-    .red_in(redr),       // 8-bit red data
-    .green_in(greenr),     // 8-bit green data
-    .blue_in(bluer),      // 8-bit blue data
-    .DO(DO)           // Signal to send to WS2811 chain.
-    );	 
+	.NUM_LEDS(NUM_LEDS),          // The number of LEDS in the chain
+	.SYSTEM_CLOCK(50000000)
+	)
+ws2812_inst
+	(
+	.clk(CLK),  // Clock input.
+	.reset_state(reset_state),
+	.data_request(ws_data_req),	// This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
+	.new_address(ws_new_addr),		// This signal is asserted whenever the address signal is updated to its new value.
+	.address(ws_addr),				// The current LED number. This signal is incremented to the next value two cycles after the last time data_request was asserted.
+	.red_in(redr),						// 8-bit red data
+	.green_in(greenr),				// 8-bit green data
+	.blue_in(bluer),					// 8-bit blue data
+	.DO(DO)								// Signal to send to WS2811 chain.
+	);	 
 
 always @ (posedge CLK) begin
 	if (reset_state)

@@ -20,7 +20,7 @@ module de0_top (
 	input  [1:0] GPIO_1_IN 
 );
 
-parameter NUM_LEDS = 256;
+parameter NUM_LEDS = 8;
 
 assign GPIO_0[1] = 'bz;
 assign GPIO_0[2] = 'bz;
@@ -43,13 +43,13 @@ assign GPIO_0[0] = miso;
 assign GPIO_0[3] = do0;
 assign GPIO_0[4] = do1;
 
-stretch s0 (
+stretch stretch_inst_0 (
 	.clk(CLOCK_50),
 	.in(~sel0 || ~KEY[1]),
 	.out(LED[0])
 	);
 
-stretch s1 (
+stretch stretch_inst_1 (
 	.clk(CLOCK_50),
 	.in(~sel1 || ~KEY[1]),
 	.out(LED[1])
@@ -62,7 +62,8 @@ end
 spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
-neo0 (
+spi_to_neopix_inst_0
+	(
 	.CLK(CLOCK_50),
 	.SCK(sck),
 	.MOSI(mosi),
@@ -74,7 +75,8 @@ neo0 (
 spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS)
 	)
-neo1 (
+spi_to_neopix_inst_1
+	(
 	.CLK(CLOCK_50),
 	.SCK(sck),
 	.MOSI(mosi),
