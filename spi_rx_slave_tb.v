@@ -5,6 +5,7 @@ module tb;
 
    reg SCK = 0, MOSI = 0, SSEL0 = 1, SSEL1 = 1;
 	wire MISO;
+	reg [1:0] KEY = 2'b11;
    		
 // sck  IO_0_IN[0]
 // mosi IO_0_IN[1]
@@ -21,10 +22,15 @@ assign GPIO_0_IN = {MOSI, SCK};
 assign GPIO_0[1] = SSEL0;
 assign GPIO_0[2] = SSEL1;
 
-de0_top uut (
+de0_top #(
+	.MIN_LED_PULSE(20000),
+	.NUM_LEDS(2)
+	)
+uut (
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
-	.GPIO_0_IN(GPIO_0_IN)
+	.GPIO_0_IN(GPIO_0_IN),
+	.KEY(KEY)
 );
    
   task do_write;
@@ -64,6 +70,7 @@ de0_top uut (
 		MOSI = 0;
 		SSEL0 = 1;
 		SSEL1 = 1;
+		KEY = 3;
 		
 		#200 SSEL0 = 0;
 		do_write(8'haa);

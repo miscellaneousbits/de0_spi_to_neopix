@@ -1,5 +1,7 @@
 module ws2812 (
 	input                              clk,          // Clock input.
+	input                              reset,
+	input                              start,
 	output                             reset_state,
 	output                             data_request, // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
 	output                             new_address,  // This signal is asserted whenever the address signal is updated to its new value.
@@ -8,49 +10,48 @@ module ws2812 (
 	input [7:0]                        green_in,     // 8-bit green data
 	input [7:0]                        blue_in,      // 8-bit blue data
 	output reg                         DO            // Signal to send to WS2811 chain.
+
  );
 
-parameter NUM_LEDS          = 8;          // The number of LEDS in the chain
-parameter SYSTEM_CLOCK      = 50000000;   // The frequency of the input clock signal, in Hz. This value must be correct in order to have correct timing for the WS2811 protocol.
+parameter NUM_LEDS = 8;          		// The number of LEDS in the chain
+parameter SYSTEM_CLOCK = 50000000;   	// The frequency of the input clock signal, in Hz. This value must be correct in order to have correct timing for the WS2811 protocol.
 	 
 localparam integer LED_ADDRESS_WIDTH = $clog2(NUM_LEDS);         // Number of bits to use for address input
-localparam integer CYCLE_COUNT         = SYSTEM_CLOCK / 800_000;
+localparam integer CYCLE_COUNT = SYSTEM_CLOCK / 800_000; // 800 KHz pixel clock
 
 // SK6812
-localparam integer H0_CYCLE_COUNT   = 0.25 * CYCLE_COUNT;
-localparam integer H1_CYCLE_COUNT   = 0.5 * CYCLE_COUNT;
+localparam integer H0_CYCLE_COUNT = 0.25 * CYCLE_COUNT;
+localparam integer H1_CYCLE_COUNT = 0.5 * CYCLE_COUNT;
 // WS2812B
-// localparam integer H0_CYCLE_COUNT   = 0.32 * CYCLE_COUNT;
-// localparam integer H1_CYCLE_COUNT   = 0.64 * CYCLE_COUNT;
+// localparam integer H0_CYCLE_COUNT = 0.32 * CYCLE_COUNT;
+// localparam integer H1_CYCLE_COUNT = 0.64 * CYCLE_COUNT;
 	
-localparam integer RESET_COUNT      = 100 * CYCLE_COUNT;
+localparam integer RESET_COUNT = 100 * CYCLE_COUNT;
 
-reg [$clog2(CYCLE_COUNT)-1:0]       clock_div;			// Clock divider for a cycle
-reg [$clog2(RESET_COUNT)-1:0]       reset_counter;		// Counter for a reset cycle
+reg [$clog2(CYCLE_COUNT)-1:0] clock_div;			// Clock divider for a cycle
+reg [$clog2(RESET_COUNT)-1:0] reset_counter;		// Counter for a reset cycle
 
 localparam STATE_RESET    = 3'd0;
 localparam STATE_LATCH    = 3'd1;
 localparam STATE_PRE      = 3'd2;
 localparam STATE_TRANSMIT = 3'd3;
 localparam STATE_POST     = 3'd4;
-reg [2:0]                           state;				// FSM state;
+reg [2:0] state;				// FSM state;
 
 assign reset_state = state == STATE_RESET;
 
-localparam COLOR_G     = 2'd0;
-localparam COLOR_R     = 2'd1;
-localparam COLOR_B     = 2'd2;
-reg [1:0]                           color;				// Current color being transferred
+localparam COLOR_G = 2'd0;
+localparam COLOR_R = 2'd1;
+localparam COLOR_B = 2'd2;
+reg [1:0] color;				// Current color being transferred
 							  
-reg [7:0]                           red;
-reg [7:0]                           green;
-reg [7:0]                           blue;
+reg [7:0] red, green, blue;
 
-reg [7:0]                           current_byte;		// Current byte to send
-reg [2:0]                           current_bit;		// Current bit index to send
+reg [7:0] current_byte;		// Current byte to send
+reg [2:0] current_bit;		// Current bit index to send
 
-wire                                reset_almost_done;
-wire                                led_almost_done;
+wire reset_almost_done;
+wire led_almost_done;
 
 assign reset_almost_done =
 	(state == STATE_RESET) && (reset_counter == RESET_COUNT-1);
@@ -59,30 +60,36 @@ assign led_almost_done =
 
 assign data_request = reset_almost_done || led_almost_done;
 assign new_address  = (state == STATE_PRE) && (current_bit == 7);
-reg 											reset = 1;
+
+reg [1:0] start_r;
+reg start_now_r;
 
 always @ (posedge clk) begin
 	if (reset) begin
-			reset <= 0;
 		address <= 0;
 		state <= STATE_RESET;
 		DO <= 0;
 		reset_counter <= 0;
 		color <= COLOR_G;
 		current_bit <= 7;
+		start_r <= 0;
+      start_now_r <= 0;
 	end
 	else begin
+		start_r <= {start_r[0], start};
 		case (state)
 		
 		  STATE_RESET: begin
-			  // De-assert DO, and wait for 75 us.
 			  DO <= 0;
-			  if (reset_counter == RESET_COUNT-1) begin
+			  if (start_r == 2'b01)
+				  start_now_r <= 1;
+			  // De-assert DO, and wait for 75 us.
+			  if (reset_counter < RESET_COUNT - 1)
+				  reset_counter <= reset_counter + 1'b1;
+			  else if (start_now_r) begin
+			     start_now_r <= 0;
 				  reset_counter <= 0;
 				  state <= STATE_LATCH;
-			  end
-			  else begin
-				  reset_counter <= reset_counter + 1'b1;
 			  end
 		  end
 		  
