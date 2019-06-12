@@ -5,10 +5,12 @@ module spi_to_neopix(
 	input MOSI,
 	output MISO,
 	input SSEL,
-	output DO
+	output DO,
+	output BUSY,
+	input [1:0] SPI_MODE
 );
 
-parameter NUM_LEDS = 8;
+parameter NUM_LEDS = 256;
 parameter SYSTEM_CLOCK = 50000000;
 
 reg [$clog2(NUM_LEDS):0] led_count[0:1];
@@ -37,18 +39,18 @@ reg wren;
 reg ws_bank;
 wire [$clog2(NUM_LEDS) - 1:0] ws_addr;
 wire [$clog2(NUM_LEDS):0] ws_banked_addr = ws_addr + (ws_bank ? bank_1_offset : bank_0_offset);
-wire [31:0] q;
+wire [31:0] data_out;
 
-dual_port_ram dual_port_ram_inst (
+dual_port_ram dual_port_ram_0 (
 	.clock (CLK),
-	.data ({8'b0, spi_word}),
-	.rdaddress (9'b0 | ws_banked_addr),
-	.wraddress (9'b0 | spi_banked_addr),
+	.data_in ({8'b0, spi_word}),
+	.rdaddress (ws_banked_addr),
+	.wraddress (spi_banked_addr),
 	.wren (wren),
-	.q (q)
+	.data_out (data_out)
 	);
 	
-SPI_rx_slave SPI_rx_slave_inst (
+SPI_slave SPI_slave_0 (
 	.clk(CLK),
 	.reset(RESET),
 	.SCK(SCK), 
@@ -56,7 +58,8 @@ SPI_rx_slave SPI_rx_slave_inst (
 	.MISO(MISO),
 	.SSEL(SSEL), 
 	.DATA(spi_data), 
-	.READY(spi_ready)
+	.READY(spi_ready),
+	.mode(SPI_MODE)
 	);
 	
 always @ (posedge CLK) begin
@@ -110,8 +113,8 @@ always @ (posedge CLK) begin
 end
 
 reg [7:0] redr, greenr, bluer;
-wire ws_data_req, ws_new_addr;
-wire [$clog2(NUM_LEDS * 3):0] ws_count;
+wire ws_data_req;
+wire [$clog2(NUM_LEDS):0] ws_count;
 assign ws_count = led_count[ws_bank];
 wire reset_state;
 
@@ -119,19 +122,20 @@ ws2812 #(
 	.NUM_LEDS(NUM_LEDS),          // The number of LEDS in the chain
 	.SYSTEM_CLOCK(SYSTEM_CLOCK)
 	)
-ws2812_inst
+ws2812_0
 	(
 	.clk(CLK),  // Clock input.
 	.reset(RESET),
 	.start(ssel == 2'b01),
 	.reset_state(reset_state),
 	.data_request(ws_data_req),	// This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
-	.new_address(ws_new_addr),		// This signal is asserted whenever the address signal is updated to its new value.
 	.address(ws_addr),				// The current LED number. This signal is incremented to the next value two cycles after the last time data_request was asserted.
 	.red_in(redr),						// 8-bit red data
 	.green_in(greenr),				// 8-bit green data
 	.blue_in(bluer),					// 8-bit blue data
-	.DO(DO)								// Signal to send to WS2811 chain.
+	.DO(DO),								// Signal to send to WS2811 chain.
+	.busy(BUSY),
+	.ledcount(ws_count)
 	);
 
 always @ (posedge CLK) begin
@@ -142,14 +146,9 @@ always @ (posedge CLK) begin
 			ws_bank <= spi_bank;
 		if (ws_data_req) begin
 			if (ws_addr < ws_count) begin
-				greenr <= q[23:16];
-				redr <= q[15:8];
-				bluer <= q[7:0];
-			end
-			else begin
-				greenr <= 0;
-				redr <= 0;
-				bluer <= 0;
+				greenr <= data_out[23:16];
+				redr <= data_out[15:8];
+				bluer <= data_out[7:0];
 			end
 		end
 	end

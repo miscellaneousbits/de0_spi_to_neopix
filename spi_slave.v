@@ -1,5 +1,6 @@
-module SPI_rx_slave(
+module SPI_slave(
    input clk,
+	input [1:0] mode,
 	input reset,
    input SCK, SSEL, MOSI,
 	output MISO,
@@ -7,10 +8,13 @@ module SPI_rx_slave(
 	output READY
 );
 
+wire cpol = mode[1];
+wire cpha = mode[0];
+
 // sync SCK to the FPGA clock using a 3-bits shift register
 reg [2:0] SCKr;
-wire SCK_risingedge = (SCKr[2:1]==2'b01);
-wire SCK_fallingedge = (SCKr[2:1]==2'b10);
+wire SCK_risingedge = SCKr[2:1] == {cpha, ~cpha};
+wire SCK_fallingedge = SCKr[2:1] == {~cpha, cpha};
 
 // same thing for SSEL
 reg [2:0] SSELr;
@@ -38,7 +42,7 @@ always @(posedge clk) begin
 		MOSIr <= 0;
 	end
 	else begin
-		SCKr <= {SCKr[1:0], SCK};
+		SCKr <= {SCKr[1:0], SCK ^ cpol};
 		SSELr <= {SSELr[1:0], SSEL};
 		MOSIr <= {MOSIr[0], MOSI};
 		byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'd7);
