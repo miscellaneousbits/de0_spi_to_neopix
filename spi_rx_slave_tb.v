@@ -21,6 +21,7 @@ wire [1:0] GPIO_0_IN;
 assign GPIO_0_IN = {MOSI, SCK};
 assign GPIO_0[1] = SSEL0;
 assign GPIO_0[2] = SSEL1;
+assign GPIO_0[7] = 0;
 
 de0_top uut (
 	.CLOCK_50(clk),
