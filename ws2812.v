@@ -1,23 +1,21 @@
 module ws2812 (
-
-	input                              clk,          // Clock input.
-	input                              reset,
-	input                              start,
-	output                             reset_state,
-	output                             data_request, // This signal is asserted one cycle before red_in, green_in, and blue_in are sampled.
-	output reg [$clog2(NUM_LEDS)-1:0]  address,      // The current LED number. This signal is incremented to the next value two cycles after the last time data_request was asserted.
-	output                             busy,
-	input [7:0]                        red_in,       // 8-bit red data
-	input [7:0]                        green_in,     // 8-bit green data
-	input [7:0]                        blue_in,      // 8-bit blue data
-	output reg                         DO,           // Signal to send to WS2811 chain.
-	input [8:0]                        ledcount
+	input                              clk_i,          // Clock input.
+	input                              reset_i,
+	input                              start_i,
+	output                             busy_o,
+	output                             data_request_o, // This signal is asserted one cycle before red_i, green_i, and blue_i are sampled.
+	output reg [$clog2(NUM_LEDS)-1:0]  address_o,      // The current LED number. This signal is incremented to the next value two cycles after the last time data_request_o was asserted.
+	input [7:0]                        red_i,       // 8-bit red_r data
+	input [7:0]                        green_i,     // 8-bit green_r data
+	input [7:0]                        blue_i,      // 8-bit blue_r data
+	output reg                         do_o,           // Signal to send to WS2811 chain.
+	input [$clog2(NUM_LEDS)-1:0]       led_count_i
  );
 
-parameter NUM_LEDS = 256;          		// The number of LEDS in the chain
+parameter NUM_LEDS = 8;          		// The number of LEDS in the chain
 parameter SYSTEM_CLOCK = 50000000;   	// The frequency of the input clock signal, in Hz. This value must be correct in order to have correct timing for the WS2811 protocol.
 	 
-localparam integer LED_ADDRESS_WIDTH = $clog2(NUM_LEDS);         // Number of bits to use for address input
+localparam integer LED_ADDRESS_WIDTH = $clog2(NUM_LEDS);         // Number of bits to use for address_o input
 localparam integer CYCLE_COUNT = SYSTEM_CLOCK / 800_000; // 800 KHz pixel clock
 
 // SK6812
@@ -29,136 +27,134 @@ localparam integer H1_CYCLE_COUNT = 0.5 * CYCLE_COUNT;
 	
 localparam integer RESET_COUNT = 100 * CYCLE_COUNT;
 
-reg [$clog2(CYCLE_COUNT)-1:0] clock_div;			// Clock divider for a cycle
-reg [$clog2(RESET_COUNT)-1:0] reset_counter;		// Counter for a reset cycle
+reg [$clog2(CYCLE_COUNT)-1:0] clock_div_r;			// Clock divider for a cycle
+reg [$clog2(RESET_COUNT)-1:0] reset_counter_r;		// Counter for a reset_i cycle
 
 localparam STATE_RESET    = 3'd0;
 localparam STATE_LATCH    = 3'd1;
 localparam STATE_PRE      = 3'd2;
 localparam STATE_TRANSMIT = 3'd3;
 localparam STATE_POST     = 3'd4;
-reg [2:0] state;				// FSM state;
+reg [2:0] state_r;				// FSM state_r;
 
-assign reset_state = state == STATE_RESET;
+assign busy_o = state_r != STATE_RESET;
 
 localparam COLOR_G = 2'd0;
 localparam COLOR_R = 2'd1;
 localparam COLOR_B = 2'd2;
-reg [1:0] color;				// Current color being transferred
+reg [1:0] color_r;				// Current color_r being transferred
 							  
-reg [7:0] red, green, blue;
+reg [7:0] red_r, green_r, blue_r;
 
-reg [7:0] current_byte;		// Current byte to send
-reg [2:0] current_bit;		// Current bit index to send
+reg [7:0] current_byte_r;		// Current byte to send
+reg [2:0] current_bit_r;		// Current bit index to send
 
-wire reset_almost_done;
-wire led_almost_done;
+wire reset_almost_done_w;
+wire led_almost_done_w;
 
-assign reset_almost_done =
-	(state == STATE_RESET) && (reset_counter == RESET_COUNT-1);
-assign led_almost_done =
-	(state == STATE_POST)  && (color == COLOR_B) && (current_bit == 0) && (address != 0);
+assign reset_almost_done_w =
+	(state_r == STATE_RESET) && (reset_counter_r == RESET_COUNT-1);
+assign led_almost_done_w =
+	(state_r == STATE_POST)  && (color_r == COLOR_B) && (current_bit_r == 0) && (address_o != 0);
 
-assign data_request = reset_almost_done || led_almost_done;
-
-assign busy = state != STATE_RESET;
+assign data_request_o = reset_almost_done_w || led_almost_done_w;
 
 reg [1:0] start_r;
 reg start_now_r;
 
-always @ (posedge clk) begin
-	if (reset) begin
-		address <= 0;
-		state <= STATE_RESET;
-		DO <= 0;
-		reset_counter <= 0;
-		color <= COLOR_G;
-		current_bit <= 7;
+always @ (posedge clk_i) begin
+	if (reset_i) begin
+		address_o <= 0;
+		state_r <= STATE_RESET;
+		do_o <= 0;
+		reset_counter_r <= 0;
+		color_r <= COLOR_G;
+		current_bit_r <= 7;
 		start_r <= 0;
-      start_now_r <= 0;
+		start_now_r <= 0;
 	end
 	else begin
-		start_r <= {start_r[0], start};
-		case (state)
+		start_r <= {start_r[0], start_i};
+		case (state_r)
 		
 		  STATE_RESET: begin
-			  DO <= 0;
+			  do_o <= 0;
 			  if (start_r == 2'b01)
 				  start_now_r <= 1;
-			  // De-assert DO, and wait for 75 us.
-			  if (reset_counter < RESET_COUNT - 1)
-				  reset_counter <= reset_counter + 1'b1;
+			  // De-assert do_o, and wait for 75 us.
+			  if (reset_counter_r < RESET_COUNT - 1)
+				  reset_counter_r <= reset_counter_r + 1'b1;
 			  else if (start_now_r) begin
 			     start_now_r <= 0;
-				  reset_counter <= 0;
-				  state <= STATE_LATCH;
+				  state_r <= STATE_LATCH;
 			  end
 		  end
 		  
 		  STATE_LATCH: begin
 			  // Latch the input
-			  red <= red_in;
-			  blue <= blue_in;
+			  red_r <= red_i;
+			  blue_r <= blue_i;
 
-			  // Setup the new address
-			  address <= address + 1'b1;
+			  // Setup the new address_o
+			  address_o <= address_o + 1'b1;
 			  
-			  // Start sending green
-			  color <= COLOR_G;
-			  current_byte <= green_in;
-			  current_bit <= 7;
+			  // Start sending green_r
+			  color_r <= COLOR_G;
+			  current_byte_r <= green_i;
+			  current_bit_r <= 7;
 			  
-			  state <= STATE_PRE;
+			  state_r <= STATE_PRE;
 		  end
 		  
 		  STATE_PRE: begin
-			  // Assert DO, start clock divider counter
-			  clock_div <= 0;
-			  DO <= 1;
-			  state <= STATE_TRANSMIT;
+			  // Assert do_o, start_i clock divider counter
+			  clock_div_r <= 0;
+			  do_o <= 1;
+			  state_r <= STATE_TRANSMIT;
 		  end
 		  
 		  STATE_TRANSMIT: begin
-			  // De-assert DO after a certain amount of time, depending on if you're transmitting a 1 or 0.
-			  if ((current_byte[7] == 0 && clock_div >= H0_CYCLE_COUNT) || (current_byte[7] == 1 && clock_div >= H1_CYCLE_COUNT))
-				  DO <= 0;
+			  // De-assert do_o after a certain amount of time, depending on if you're transmitting a 1 or 0.
+			  if ((current_byte_r[7] == 0 && clock_div_r >= H0_CYCLE_COUNT) || (current_byte_r[7] == 1 && clock_div_r >= H1_CYCLE_COUNT))
+				  do_o <= 0;
 			  // Advance cycle counter
-			  if (clock_div == CYCLE_COUNT-1)
-				  state <= STATE_POST;
-			  clock_div <= clock_div + 1'b1;
+			  if (clock_div_r == CYCLE_COUNT-1)
+				  state_r <= STATE_POST;
+			  clock_div_r <= clock_div_r + 1'b1;
 		  end
 		  
 		  STATE_POST: begin
-			  if (current_bit != 0) begin
+			  if (current_bit_r != 0) begin
 				  // Start sending next bit of data
-				  current_byte <= {current_byte[6:0], 1'b0};
-				  current_bit <= current_bit - 1'b1;
-				  state <= STATE_PRE;
+				  current_byte_r <= {current_byte_r[6:0], 1'b0};
+				  current_bit_r <= current_bit_r - 1'b1;
+				  state_r <= STATE_PRE;
 			  end
 			  else begin
-				  // Advance to the next color. If we were on blue, advance to the next LED
-				  case (color)
+				  // Advance to the next color_r. If we were on blue_r, advance to the next LED
+				  case (color_r)
 					  COLOR_G: begin
-						  color <= COLOR_R;
-						  current_byte <= red;
-						  current_bit <= 7;
-						  state <= STATE_PRE;
+						  color_r <= COLOR_R;
+						  current_byte_r <= red_r;
+						  current_bit_r <= 7;
+						  state_r <= STATE_PRE;
 					  end
 					 COLOR_R: begin
-						 color <= COLOR_B;
-						 current_byte <= blue;
-						 current_bit <= 7;
-						 state <= STATE_PRE;
+						 color_r <= COLOR_B;
+						 current_byte_r <= blue_r;
+						 current_bit_r <= 7;
+						 state_r <= STATE_PRE;
 					 end
 					 COLOR_B: begin
-						 // If we were on the last LED, send out reset pulse
-						 if (address == ledcount[$clog2(NUM_LEDS)-1:0]) begin 
-							 address <= 0;
-							 state <= STATE_RESET;
+						 // If we were on the last LED, send out reset_i pulse
+						 if (address_o == led_count_i) begin
+							 state_r <= STATE_RESET;
+							 address_o <= 0;
+							 reset_counter_r <= 0;
+							 address_o <= 0;
 						 end
-						 else begin
-							 state <= STATE_LATCH;
-						 end
+						 else
+							 state_r <= STATE_LATCH;
 					 end
 				  endcase
 			  end
@@ -167,5 +163,5 @@ always @ (posedge clk) begin
 		endcase
 	end
 end
-   
+	
 endmodule

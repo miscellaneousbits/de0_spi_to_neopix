@@ -1,88 +1,88 @@
-module SPI_slave(
-   input clk,
-	input [1:0] mode,
-	input reset,
-   input SCK, SSEL, MOSI,
-	output MISO,
-   output reg [7:0] DATA,
-	output READY
+module SPI_rx_slave(
+	input clk_i,
+	input reset_i,
+	input sck_i, ssel_i, mosi_i,
+	output miso_o,
+	output reg [7:0] data_o,
+	output ready_o
 );
 
-wire cpol = mode[1];
-wire cpha = mode[0];
+parameter CPOL = 0;
+parameter CPHA = 0;
 
-// sync SCK to the FPGA clock using a 3-bits shift register
-reg [2:0] SCKr;
-wire SCK_risingedge = SCKr[2:1] == {cpha, ~cpha};
-wire SCK_fallingedge = SCKr[2:1] == {~cpha, cpha};
+wire sclk_w = sck_i ^ CPOL[0];
 
-// same thing for SSEL
-reg [2:0] SSELr;
-wire SSEL_active = ~SSELr[1];  // SSEL is active low
+// sync sck_i to the FPGA clock using a 3-bits shift register
+reg [2:0] sck_r;
+wire sck_risingedge_w = (sck_r[2:1]== {CPHA[0], ~CPHA[0]});
+wire sck_fallingedge_w = (sck_r[2:1]== {~CPHA[0], CPHA[0]});
 
-// and for MOSI
-reg [1:0] MOSIr;
-wire MOSI_data = MOSIr[1];
+// same thing for ssel_i
+reg [2:0] ssel_r;
+wire ssel_active_w = ~ssel_r[1];  // ssel_i is active low
+
+// and for mosi_i
+reg [1:0] mosi_r;
+wire mosi_data_w = mosi_r[1];
 
 // we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
-reg [2:0] bitcnt;
+reg [2:0] bitcnt_r;
 
-reg byte_received;  // high when a byte has been received
-reg [7:0] byte_data_received;
-reg [1:0] data_ready = 0;
+reg byte_received_r;  // high when a byte has been received
+reg [7:0] byte_data_received_r;
+reg [1:0] data_ready_r = 0;
 
 // we use the LSB of the data received to control an LED
-assign READY = data_ready[1];
+assign ready_o = data_ready_r[1];
 
-always @(posedge clk) begin
-	if (reset) begin
-		data_ready <= 0;
-		SCKr <= 0;
-		SSELr <= 3'b111;
-		MOSIr <= 0;
+always @(posedge clk_i) begin
+	if (reset_i) begin
+		data_ready_r <= 0;
+		sck_r <= 0;
+		ssel_r <= 3'b111;
+		mosi_r <= 0;
 	end
 	else begin
-		SCKr <= {SCKr[1:0], SCK ^ cpol};
-		SSELr <= {SSELr[1:0], SSEL};
-		MOSIr <= {MOSIr[0], MOSI};
-		byte_received <= SSEL_active && SCK_risingedge && (bitcnt==3'd7);
-		if(~SSEL_active)
-			bitcnt <= 0;
-		else if(SCK_risingedge) begin
-			bitcnt <= bitcnt + 1'b1;
+		sck_r <= {sck_r[1:0], sclk_w};
+		ssel_r <= {ssel_r[1:0], ssel_i};
+		mosi_r <= {mosi_r[0], mosi_i};
+		byte_received_r <= ssel_active_w && sck_risingedge_w && (bitcnt_r==3'd7);
+		if(~ssel_active_w)
+			bitcnt_r <= 0;
+		else if(sck_risingedge_w) begin
+			bitcnt_r <= bitcnt_r + 1'b1;
 			// We receive the data MSB first
-			byte_data_received <= {byte_data_received[6:0], MOSI_data};
+			byte_data_received_r <= {byte_data_received_r[6:0], mosi_data_w};
 		end
-		if(byte_received)
-			DATA <= byte_data_received;
-		data_ready <= {data_ready[0], byte_received};
+		if(byte_received_r)
+			data_o <= byte_data_received_r;
+		data_ready_r <= {data_ready_r[0], byte_received_r};
 	end
 end
 
-reg [7:0] byte_data_sent;
+reg [7:0] byte_data_sent_r;
 
-reg [7:0] cnt;
-wire SSEL_startmessage = (SSELr[2:1]==2'b10);
-assign MISO = SSEL_active ? byte_data_sent[7] : 1'bz;
+reg [7:0] cnt_r;
+wire ssel_start_w = (ssel_r[2:1]==2'b10);
+assign miso_o = ssel_active_w ? byte_data_sent_r[7] : 1'bz;
 
-always @(posedge clk) begin
-	if(SSEL_active)
+always @(posedge clk_i) begin
+	if(ssel_active_w)
 	begin
-		if (~reset) begin
-			if(SSEL_startmessage)
-				cnt<=cnt + 1'b1;
-			if(SSEL_startmessage)
-				byte_data_sent <= 0;  // first byte sent in a message is the message count
-			else if(SCK_fallingedge) begin
-				if(bitcnt==3'b0)
-					byte_data_sent <= byte_data_received;  // after that, we send 0s
+		if (~reset_i) begin
+			if(ssel_start_w)
+				cnt_r<=cnt_r + 1'b1;
+			if(ssel_start_w)
+				byte_data_sent_r <= 0;  // first byte sent in a message is the message count
+			else if(sck_fallingedge_w) begin
+				if(bitcnt_r==3'b0)
+					byte_data_sent_r <= byte_data_received_r;  // after that, we send 0s
 				else
-					byte_data_sent <= {byte_data_sent[6:0], 1'b0};
+					byte_data_sent_r <= {byte_data_sent_r[6:0], 1'b0};
 			end
 		end
 	end
 end
-
 
 endmodule
 

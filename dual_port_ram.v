@@ -1,10 +1,10 @@
 module dual_port_ram (
-	input	          clock,
-	input	[31:0]    data_in,
-	input	[8:0]     rdaddress,
-	input	[8:0]     wraddress,
-	input	          wren,
-	output [31:0]   data_out
+	input	        clk_i,
+	input	[31:0]  data_i,
+	input	[8:0]   rdaddr_i,
+	input	[8:0]   wraddr_i,
+	input	        wren_i,
+	output	[31:0]  q_o
 	);
 
 altsyncram	#(
@@ -29,12 +29,12 @@ altsyncram	#(
 	.width_byteena_a(1)
 )
 ram (
-	.address_a (wraddress),
-	.address_b (rdaddress),
-	.clock0 (clock),
-	.data_a (data_in),
-	.wren_a (wren),
-	.q_b (data_out),
+	.address_a (wraddr_i),
+	.address_b (rdaddr_i),
+	.clock0 (clk_i),
+	.data_a (data_i),
+	.wren_a (wren_i),
+	.q_b (q_o),
 	.aclr0 (1'b0),
 	.aclr1 (1'b0),
 	.addressstall_a (1'b0),
