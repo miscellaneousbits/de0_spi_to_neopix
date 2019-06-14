@@ -58,9 +58,9 @@ wire reset_almost_done_w;
 wire led_almost_done_w;
 
 assign reset_almost_done_w =
-	(state_r == STATE_RESET) && (reset_counter_r == RESET_COUNT-1);
+	(state_r == STATE_RESET) && (reset_counter_r == (RESET_COUNT - 1));
 assign led_almost_done_w =
-	(state_r == STATE_POST)  && (color_r == COLOR_B) && (current_bit_r == 0) && (address_o != 0);
+	(state_r == STATE_POST) && (color_r == COLOR_B) && (current_bit_r == 0) && (address_o != led_count_i);
 
 assign data_request_o = reset_almost_done_w || led_almost_done_w;
 
@@ -123,9 +123,9 @@ always @ (posedge clk_i) begin
 			  if (clock_div_r >= (current_byte_r[7] ? H1_CYCLE_COUNT : H0_CYCLE_COUNT))
 				  do_o <= 0;
 			  // Advance cycle counter
+			  clock_div_r <= clock_div_r + 1'b1;
 			  if (clock_div_r == CYCLE_COUNT - 1)
 				  state_r <= STATE_POST;
-			  clock_div_r <= clock_div_r + 1'b1;
 		  end
 		  
 		  STATE_POST: begin

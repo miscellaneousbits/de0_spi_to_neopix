@@ -22,8 +22,8 @@ module de0_top (
 localparam NUM_LEDS = 256;
 localparam SYSTEM_CLOCK = 50000000;
 
-parameter MIN_DURATION = (SYSTEM_CLOCK / 10) - 1;
-//parameter MIN_DURATION = 20000; // for sim
+localparam MIN_DURATION = SYSTEM_CLOCK / 10;
+//localparam MIN_DURATION = 20000; // for sim
 
 // Set all unused and input pins to hi-z
 assign GPIO_0[1] = 1'bz;
@@ -46,7 +46,7 @@ wire reset_w = ~KEY[0] || (init_reset_r != 0);
 wire [1:0] do_w, ws_bsy_w, ws_bsy_led_w, spi_bsy_led_w;
 
 // Assign outputs
-assign LED[7] = 1; // always on
+assign LED[7] = ~reset_w;
 assign LED[6:4] = 0; // always off
 assign LED[3:2] = ws_bsy_led_w;
 assign LED[1:0] = spi_bsy_led_w;
