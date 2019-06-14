@@ -22,12 +22,13 @@ assign GPIO_0_IN = {MOSI, SCK};
 assign GPIO_0[1] = SSEL0;
 assign GPIO_0[2] = SSEL1;
 
-de0_top uut (
+de0_top uut
+	(
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
 	.GPIO_0_IN(GPIO_0_IN),
 	.KEY(KEY)
-);
+	);
    
   task do_write;
     input [7:0] data; 
@@ -66,24 +67,19 @@ de0_top uut (
 		MOSI = 0;
 		SSEL0 = 1;
 		SSEL1 = 1;
-		KEY = 3;
+		KEY = 0;
+		#2000 KEY = 1;
 		
-		#200 SSEL0 = 0;
-		do_write(8'haa);
-		do_write(8'h55);
-		do_write(0);
-		do_write(8'haa);
-		do_write(8'h55);
-		do_write(0);
-		SSEL0 = 1;
-
 		#90800 SSEL0 = 0;
-		do_write(8'h00);
-		do_write(8'h55);
 		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
+		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
 		SSEL0 = 1;
 
-		#100 SSEL1 = 0;
+		#90800 SSEL1 = 0;
 		do_write(8'haa);
 		do_write(8'h55);
 		do_write(0);
@@ -91,6 +87,12 @@ de0_top uut (
 		do_write(8'h55);
 		do_write(0);
 		SSEL1 = 1;
+
+		#90800 SSEL0 = 0;
+		do_write(8'h00);
+		do_write(8'h55);
+		do_write(8'haa);
+		SSEL0 = 1;
 
 		#90800 SSEL1 = 0;
 		do_write(8'h00);

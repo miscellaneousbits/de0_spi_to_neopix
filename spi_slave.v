@@ -1,21 +1,21 @@
 module SPI_rx_slave(
-	input clk_i,
-	input reset_i,
-	input sck_i, ssel_i, mosi_i,
-	output miso_o,
-	output reg [7:0] data_o,
-	output ready_o
+	input		clk_i,
+	input		reset_i,
+	input		sck_i, ssel_i, mosi_i,
+	output	miso_o,
+	output	reg [7:0] data_o,
+	output	ready_o
 );
 
-parameter CPOL = 0;
-parameter CPHA = 0;
+parameter CPOL = 1'b0;
+parameter CPHA = 1'b0;
 
-wire sclk_w = sck_i ^ CPOL[0];
+wire sclk_w = sck_i ^ CPOL;
 
 // sync sck_i to the FPGA clock using a 3-bits shift register
 reg [2:0] sck_r;
-wire sck_risingedge_w = (sck_r[2:1]== {CPHA[0], ~CPHA[0]});
-wire sck_fallingedge_w = (sck_r[2:1]== {~CPHA[0], CPHA[0]});
+wire sck_risingedge_w = (sck_r[2:1]== {CPHA, ~CPHA});
+wire sck_fallingedge_w = (sck_r[2:1]== {~CPHA, CPHA});
 
 // same thing for ssel_i
 reg [2:0] ssel_r;
@@ -61,9 +61,10 @@ always @(posedge clk_i) begin
 end
 
 reg [7:0] byte_data_sent_r;
-
 reg [7:0] cnt_r;
+
 wire ssel_start_w = (ssel_r[2:1]==2'b10);
+
 assign miso_o = ssel_active_w ? byte_data_sent_r[7] : 1'bz;
 
 always @(posedge clk_i) begin
@@ -76,7 +77,7 @@ always @(posedge clk_i) begin
 				byte_data_sent_r <= 0;  // first byte sent in a message is the message count
 			else if(sck_fallingedge_w) begin
 				if(bitcnt_r==3'b0)
-					byte_data_sent_r <= byte_data_received_r;  // after that, we send 0s
+					byte_data_sent_r <= byte_data_received_r; // echo received data
 				else
 					byte_data_sent_r <= {byte_data_sent_r[6:0], 1'b0};
 			end

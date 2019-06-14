@@ -1,12 +1,12 @@
 module spi_to_neopix(
-	input clk_i,
-	input reset_i,
-	input sck_i,
-	input mosi_i,
-	output miso_o,
-	input ssel_i,
-	output do_o,
-	output ws_bsy_o
+	input		clk_i,
+	input		reset_i,
+	input		sck_i,
+	input		mosi_i,
+	output	miso_o,
+	input		ssel_i,
+	output	do_o,
+	output	ws_bsy_o
 );
 
 parameter NUM_LEDS = 8;
@@ -40,7 +40,7 @@ wire [$clog2(NUM_LEDS) - 1:0] ws_addr_w;
 wire [$clog2(NUM_LEDS):0] ws_banked_addr_w = ws_addr_w + (ws_bank_r ? bank_1_offset_w : bank_0_offset_w);
 wire [31:0] q_w;
 
-dual_port_ram dual_port_ram_inst (
+dual_port_ram dual_port_ram_inst_0 (
 	.clk_i (clk_i),
 	.data_i ({8'b0, spi_word_r}),
 	.rdaddr_i (9'b0 | ws_banked_addr_w),
@@ -49,7 +49,7 @@ dual_port_ram dual_port_ram_inst (
 	.q_o (q_w)
 	);
 	
-SPI_rx_slave SPI_rx_slave_inst (
+SPI_rx_slave SPI_rx_slave_inst_0 (
 	.clk_i(clk_i),
 	.reset_i(reset_i),
 	.sck_i(sck_i), 
@@ -119,8 +119,7 @@ ws2812 #(
 	.NUM_LEDS(NUM_LEDS),          // The number of LEDS in the chain
 	.SYSTEM_CLOCK(SYSTEM_CLOCK)
 	)
-ws2812_inst
-	(
+ws2812_inst_0 (
 	.clk_i(clk_i),  // Clock input.
 	.reset_i(reset_i),
 	.start_i(ssel_r == 2'b01),
