@@ -1,8 +1,8 @@
 module stretch_pulse (
-	input			clk_i,
-	input			reset_i,
-	input			in_i,
-	output		out_o
+	input		clk_i,
+	input		reset_i,
+	input		in_i,
+	output	out_o
 	);
 	
 reg [1:0] in_r;
