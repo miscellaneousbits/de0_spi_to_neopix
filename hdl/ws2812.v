@@ -1,3 +1,5 @@
+// NeoPixel protocol
+
 module ws2812 (
 	input                              clk_i,       // Clock input.
 	input                              reset_i,
@@ -53,9 +55,14 @@ reg [1:0]	start_r;
 reg			start_now_r;
 
 wire reset_almost_done_w  =
-	(state_r == STATE_RESET) && (reset_counter_r == (RESET_COUNT - 1));
+	(state_r == STATE_RESET) &&
+	(reset_counter_r == (RESET_COUNT - 1));
+	
 wire led_almost_done_w =
-	(state_r == STATE_POST) && (color_r == COLOR_B) && (current_bit_r == 0) && (address_or != led_count_i);
+	(state_r == STATE_POST) &&
+	(color_r == COLOR_B) &&
+	(current_bit_r == 0) &&
+	(address_or != led_count_i);
 
 assign data_request_o = reset_almost_done_w || led_almost_done_w;
 

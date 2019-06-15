@@ -1,3 +1,5 @@
+// 2 SPI to NeoPixel strip drivers.
+
 // sck_w  IO_0_IN[0]
 // mosi_w IO_0_IN[1]
 // miso_w IO_0[0]

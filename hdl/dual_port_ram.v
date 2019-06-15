@@ -1,11 +1,17 @@
+// 24 bit X 512 dual port RAM
+
 module dual_port_ram (
 	input					clk_i,
-	input		[31:0]	data_i,
+	input		[23:0]	data_i,
 	input		[8:0]		rdaddr_i,
 	input		[8:0]		wraddr_i,
 	input					wren_i,
-	output	[31:0]	q_o
+	output	[23:0]	data_o
 	);
+	
+wire [31:0] q_w;
+assign data_o = q_w[23:0];
+
 
 altsyncram	#(
 	.address_aclr_b("NONE"),
@@ -28,9 +34,9 @@ altsyncram_inst_0 (
 	.address_a (wraddr_i),
 	.address_b (rdaddr_i),
 	.clock0 (clk_i),
-	.data_a (data_i),
+	.data_a ({8'b0, data_i}),
 	.wren_a (wren_i),
-	.q_b (q_o),
+	.q_b (q_w),
 	.aclr0 (1'b0), .aclr1 (1'b0),
 	.addressstall_a (1'b0), .addressstall_b (1'b0),
 	.byteena_a (1'b1), .byteena_b (1'b1),

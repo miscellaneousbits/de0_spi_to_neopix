@@ -1,3 +1,5 @@
+// SPI slave protocol with echo
+
 module SPI_rx_slave(
 	input		clk_i,
 	input		reset_i,

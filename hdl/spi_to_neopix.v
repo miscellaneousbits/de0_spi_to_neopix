@@ -1,3 +1,5 @@
+// SPI to NeoPixel protocol converter
+
 module spi_to_neopix(
 	input		clk_i,
 	input		reset_i,
@@ -40,15 +42,15 @@ wire [$clog2(NUM_LEDS):0]		ws_banked_addr_w = ws_addr_w + (ws_bank_r ? bank_1_of
 
 reg									wren_r;
 
-wire [31:0] q_w;
+wire [23:0] q_w;
 
 dual_port_ram dual_port_ram_inst_0 (
 	.clk_i		(clk_i),
-	.data_i		({8'b0, spi_word_r}),
+	.data_i		(spi_word_r),
 	.rdaddr_i	(9'b0 | ws_banked_addr_w),
 	.wraddr_i	(9'b0 | spi_banked_addr_w),
 	.wren_i		(wren_r),
-	.q_o			(q_w)
+	.data_o		(q_w)
 	);
 	
 SPI_rx_slave SPI_rx_slave_inst_0 (
