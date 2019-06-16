@@ -129,7 +129,7 @@ ws2812_inst_0 (
 	.red_i			(ws_red_r),					// 8-bit red data
 	.green_i			(ws_green_r),				// 8-bit green data
 	.blue_i			(ws_blue_r),				// 8-bit blue data
-	.do_or			(do_o),						// Signal to send to WS2811 chain.
+	.do_o			   (do_o),						// Signal to send to WS2811 chain.
 	.led_count_i	(led_count_r[ws_bank_r])// ACTUAL NUMBER OF LEDs
 	);
 

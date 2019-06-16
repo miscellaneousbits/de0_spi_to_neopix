@@ -22,7 +22,7 @@ module de0_top (
 );
 
 localparam NUM_LEDS = 256;
-localparam SYSTEM_CLOCK = 50000000;
+localparam SYSTEM_CLOCK = 100_000_000;
 
 localparam MIN_DURATION = SYSTEM_CLOCK / 10;
 //localparam MIN_DURATION = 20000; // for sim
@@ -55,13 +55,18 @@ assign LED[3:2]		= ws_bsy_led_w;
 assign LED[1:0]		= spi_bsy_led_w;
 assign GPIO_0[0]		= miso_w;
 assign GPIO_0[4:3]	= do_w;
-
-wire clk_w  = CLOCK_50;
+	
+wire clk_w;
 
 always @ (posedge clk_w)
 	if (init_reset_r)
 		init_reset_r <= init_reset_r - 1'b1;
-
+		
+pll100 pll100_inst_0(
+	.inclk0(CLOCK_50),
+	.c0(clk_w)
+	);
+		
 // LED strip 0 controller
 spi_to_neopix #(
 	.NUM_LEDS(NUM_LEDS),
