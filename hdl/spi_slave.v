@@ -5,7 +5,7 @@ module SPI_rx_slave(
 	input		reset_i,
 	input		sck_i, ssel_i, mosi_i,
 	output	miso_o,
-	output	reg [7:0] data_o,
+	output	reg [7:0] data_or,
 	output	ready_o
 );
 
@@ -16,8 +16,8 @@ wire sclk_w = sck_i ^ CPOL;
 
 // sync sck_i to the FPGA clock using a 3-bits shift register
 reg [2:0] sck_r;
-wire sck_risingedge_w = (sck_r[2:1]== {CPHA, ~CPHA});
-wire sck_fallingedge_w = (sck_r[2:1]== {~CPHA, CPHA});
+wire sck_risingedge_w = (sck_r[2:1] == {CPHA, ~CPHA});
+wire sck_fallingedge_w = (sck_r[2:1] == {~CPHA, CPHA});
 
 // same thing for ssel_i
 reg [2:0] ssel_r;
@@ -57,7 +57,7 @@ always @(posedge clk_i) begin
 			byte_data_received_r <= {byte_data_received_r[6:0], mosi_data_w};
 		end
 		if(byte_received_r)
-			data_o <= byte_data_received_r;
+			data_or <= byte_data_received_r;
 		data_ready_r <= {data_ready_r[0], byte_received_r};
 	end
 end

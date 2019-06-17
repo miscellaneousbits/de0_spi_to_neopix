@@ -68,7 +68,6 @@ wire led_almost_done_w =
 assign data_request_o = reset_almost_done_w || led_almost_done_w;
 assign do_o = clock_div_r < (current_byte_r[7] ? H1_CYCLE_COUNT : H0_CYCLE_COUNT);
 
-
 always @ (posedge clk_i) begin
 	if (reset_i) begin
 		address_or <= 0;
@@ -102,13 +101,13 @@ always @ (posedge clk_i) begin
 			  red_r <= red_i;
 			  blue_r <= blue_i;
 
-			  // Setup the new address_o
-			  address_or <= address_or + 1'b1;
-			  
 			  // Start sending green_r
 			  color_r <= COLOR_G;
 			  current_byte_r <= green_i;
 			  current_bit_r <= 7;
+			  
+			  // Setup the new address_o
+			  address_or <= address_or + 1'b1;
 			  
 			  state_r <= STATE_PRE;
 		  end
@@ -116,7 +115,6 @@ always @ (posedge clk_i) begin
 		  STATE_PRE: begin
 			  // Assert do_o, start_i clock divider counter
 			  clock_div_r <= 0;
-//			  do_or <= 1;
 			  state_r <= STATE_TRANSMIT;
 		  end
 		  
@@ -148,7 +146,7 @@ always @ (posedge clk_i) begin
 						 state_r <= STATE_PRE;
 					 end
 					 COLOR_B: begin
-						 // If we were on the last LED, send out reset_i pulse
+						 // If we were on the last LED, go back to reset
 						 if (address_or == led_count_i) begin
 							 state_r <= STATE_RESET;
 							 address_or <= 0;

@@ -19,13 +19,13 @@ module de0_top (
 	input  [1:0]	GPIO_1_IN, 
 	inout [12:0]	GPIO_2,
 	input  [2:0]	GPIO_2_IN
-);
+	);
 
 localparam NUM_LEDS = 256;
-localparam SYSTEM_CLOCK = 100_000_000;
+localparam SYSTEM_CLOCK = 50_000_000;
 
-localparam MIN_DURATION = SYSTEM_CLOCK / 10;
-//localparam MIN_DURATION = 20000; // for sim
+localparam MIN_LED_PULSE_DURATION = SYSTEM_CLOCK / 10;
+//localparam MIN_LED_PULSE_DURATION = 20000; // for sim
 
 // Set all unused and input pins to hi-z
 assign GPIO_0[1]		= 1'bz;
@@ -56,16 +56,11 @@ assign LED[1:0]		= spi_bsy_led_w;
 assign GPIO_0[0]		= miso_w;
 assign GPIO_0[4:3]	= do_w;
 	
-wire clk_w;
+wire sysclk_w = CLOCK_50;
 
-always @ (posedge clk_w)
+always @ (posedge sysclk_w)
 	if (init_reset_r)
 		init_reset_r <= init_reset_r - 1'b1;
-		
-pll100 pll100_inst_0(
-	.inclk0(CLOCK_50),
-	.c0(clk_w)
-	);
 		
 // LED strip 0 controller
 spi_to_neopix #(
@@ -73,7 +68,7 @@ spi_to_neopix #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK)
 	)
 spi_to_neopix_inst_0 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.sck_i	(sck_w),
 	.mosi_i	(mosi_w),
@@ -90,7 +85,7 @@ spi_to_neopix #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK)
 	)
 spi_to_neopix_inst_1 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.sck_i	(sck_w),
 	.mosi_i	(mosi_w),
@@ -102,10 +97,10 @@ spi_to_neopix_inst_1 (
 	
 stretch_pulse #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK),
-	.MIN_DURATION(MIN_DURATION)
+	.MIN_DURATION(MIN_LED_PULSE_DURATION)
 	)
 stretch_spi_pulse_inst_0 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.in_i		(~sel_w[0]),
 	.out_o	(spi_bsy_led_w[0])
@@ -113,10 +108,10 @@ stretch_spi_pulse_inst_0 (
 
 stretch_pulse #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK),
-	.MIN_DURATION(MIN_DURATION)
+	.MIN_DURATION(MIN_LED_PULSE_DURATION)
 	)
 stretch_spi_pulse_inst_1 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.in_i		(~sel_w[1]),
 	.out_o	(spi_bsy_led_w[1])
@@ -124,10 +119,10 @@ stretch_spi_pulse_inst_1 (
 
 stretch_pulse #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK),
-	.MIN_DURATION(MIN_DURATION)
+	.MIN_DURATION(MIN_LED_PULSE_DURATION)
 	)
 stretch_ws_pulse_inst_0 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.in_i		(ws_bsy_w[0]),
 	.out_o	(ws_bsy_led_w[0])
@@ -135,10 +130,10 @@ stretch_ws_pulse_inst_0 (
 
 stretch_pulse #(
 	.SYSTEM_CLOCK(SYSTEM_CLOCK),
-	.MIN_DURATION(MIN_DURATION)
+	.MIN_DURATION(MIN_LED_PULSE_DURATION)
 	)
 stretch_ws_pulse_inst_1 (
-	.clk_i	(clk_w),
+	.clk_i	(sysclk_w),
 	.reset_i	(reset_w),
 	.in_i		(ws_bsy_w[1]),
 	.out_o	(ws_bsy_led_w[1])

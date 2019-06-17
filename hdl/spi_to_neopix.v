@@ -60,8 +60,8 @@ SPI_rx_slave SPI_rx_slave_inst_0 (
 	.mosi_i		(mosi_i),
 	.miso_o		(miso_o),
 	.ssel_i		(ssel_i), 
-	.data_o		(spi_data_w), 
-	.ready_o		(spi_ready_r)
+	.data_or		(spi_data_w), 
+	.ready_o 	(spi_ready_r)
 	);
 	
 always @ (posedge clk_i) begin
