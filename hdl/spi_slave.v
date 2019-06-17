@@ -1,12 +1,12 @@
 // SPI slave protocol with echo
 
 module SPI_rx_slave(
-	input		clk_i,
-	input		reset_i,
-	input		sck_i, ssel_i, mosi_i,
-	output	miso_o,
-	output	reg [7:0] data_or,
-	output	ready_o
+	input				clk_i,
+	input				reset_i,
+	input				sck_i, ssel_i, mosi_i,
+	output			miso_o,
+	output [7:0]	data_o,
+	output			ready_o
 );
 
 parameter CPOL = 1'b0;
@@ -25,7 +25,6 @@ wire ssel_active_w = ~ssel_r[1];  // ssel_i is active low
 
 // and for mosi_i
 reg [1:0] mosi_r;
-wire mosi_data_w = mosi_r[1];
 
 // we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
 reg [2:0] bitcnt_r;
@@ -33,9 +32,11 @@ reg [2:0] bitcnt_r;
 reg byte_received_r;  // high when a byte has been received
 reg [7:0] byte_data_received_r;
 reg [1:0] data_ready_r = 0;
+reg [7:0] data_r;
 
 // we use the LSB of the data received to control an LED
 assign ready_o = data_ready_r[1];
+assign data_o = data_r;
 
 always @(posedge clk_i) begin
 	if (reset_i) begin
@@ -54,10 +55,10 @@ always @(posedge clk_i) begin
 		else if(sck_risingedge_w) begin
 			bitcnt_r <= bitcnt_r + 1'b1;
 			// We receive the data MSB first
-			byte_data_received_r <= {byte_data_received_r[6:0], mosi_data_w};
+			byte_data_received_r <= {byte_data_received_r[6:0], mosi_r[1]};
 		end
 		if(byte_received_r)
-			data_or <= byte_data_received_r;
+			data_r <= byte_data_received_r;
 		data_ready_r <= {data_ready_r[0], byte_received_r};
 	end
 end

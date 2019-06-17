@@ -42,17 +42,16 @@ wire [$clog2(NUM_LEDS):0]		ws_banked_addr_w = ws_addr_w + (ws_bank_r ? bank_1_of
 
 reg									wren_r;
 
-wire [23:0] q_w;
+wire [31:0] q_w;
 
-dual_port_ram dual_port_ram_inst_0 (
-	.clk_i		(clk_i),
-	.data_i		(spi_word_r),
-	.rdaddr_i	(9'b0 | ws_banked_addr_w),
-	.wraddr_i	(9'b0 | spi_banked_addr_w),
-	.wren_i		(wren_r),
-	.data_o		(q_w)
-	);
-	
+dpram dpram_inst_0(
+	.clock(clk_i),
+	.data({8'd0, spi_word_r}),
+	.rdaddress(ws_banked_addr_w),
+	.wraddress(spi_banked_addr_w),
+	.wren(wren_r),
+	.q(q_w));
+
 SPI_rx_slave SPI_rx_slave_inst_0 (
 	.clk_i		(clk_i),
 	.reset_i		(reset_i),
@@ -60,7 +59,7 @@ SPI_rx_slave SPI_rx_slave_inst_0 (
 	.mosi_i		(mosi_i),
 	.miso_o		(miso_o),
 	.ssel_i		(ssel_i), 
-	.data_or		(spi_data_w), 
+	.data_o		(spi_data_w), 
 	.ready_o 	(spi_ready_r)
 	);
 	
