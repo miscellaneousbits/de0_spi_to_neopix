@@ -6,6 +6,7 @@ module tb;
    reg SCK = 0, MOSI = 0, SSEL0 = 1, SSEL1 = 1;
 	wire MISO;
 	reg [1:0] KEY = 2'b11;
+	reg [3:0] SW = 4'b0011;
    		
 // sck  IO_0_IN[0]
 // mosi IO_0_IN[1]
@@ -27,7 +28,8 @@ de0_top uut
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
 	.GPIO_0_IN(GPIO_0_IN),
-	.KEY(KEY)
+	.KEY(KEY),
+	.SW(SW)
 	);
    
   task do_write;
@@ -67,8 +69,9 @@ de0_top uut
 		MOSI = 0;
 		SSEL0 = 1;
 		SSEL1 = 1;
-		KEY = 0;
-		#2000 KEY = 1;
+		KEY = 2'b11;
+		#100 KEY[0] = 0;
+		#100 KEY[0] = 1;
 		
 		#90800 SSEL0 = 0;
 		do_write(8'haa);

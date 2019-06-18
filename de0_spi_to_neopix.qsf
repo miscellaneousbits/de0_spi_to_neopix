@@ -158,7 +158,7 @@ set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
 set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS TEST_BENCH_MODE -section_id eda_simulation
 set_global_assignment -name EDA_NATIVELINK_SIMULATION_TEST_BENCH de10_top -section_id eda_simulation
-set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE POWER"
+set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
@@ -266,7 +266,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO_1[31]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO_1[32]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO_1[33]
 set_global_assignment -name SYNTH_MESSAGE_LEVEL HIGH
-set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 8
 
 set_global_assignment -name EDA_TEST_BENCH_NAME de10_top -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id de10_top
@@ -277,7 +277,8 @@ set_global_assignment -name VERILOG_FILE test/de10_top_tb.v
 set_global_assignment -name VERILOG_FILE hdl/de0_top.v
 set_global_assignment -name VERILOG_FILE hdl/spi_to_neopix.v
 set_global_assignment -name VERILOG_FILE hdl/ws2812.v
-set_global_assignment -name VERILOG_FILE hdl/stretch_pulse.v
 set_global_assignment -name VERILOG_FILE hdl/spi_slave.v
+set_global_assignment -name VERILOG_FILE hdl/stretch_pulse.v
 set_global_assignment -name QIP_FILE ip/dpram.qip
+set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

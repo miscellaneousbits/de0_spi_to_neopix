@@ -7,15 +7,14 @@ module stretch_pulse (
 	output	out_o
 	);
 	
-reg [1:0] in_r;
-
+reg [1:0] in_r = 0;
 	
 parameter SYSTEM_CLOCK = 50000000;
 parameter MIN_DURATION = SYSTEM_CLOCK / 10;
 
 localparam HIGH_BIT = $clog2(MIN_DURATION) - 1;
 
-reg [HIGH_BIT:0] count_r;
+reg [HIGH_BIT:0] count_r = 0;
 
 assign out_o = count_r ? 1'b1 : in_i;
 	

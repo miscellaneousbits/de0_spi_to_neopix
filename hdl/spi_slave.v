@@ -1,30 +1,28 @@
 // SPI slave protocol with echo
 
-module SPI_rx_slave(
+module SPI_slave(
 	input				clk_i,
 	input				reset_i,
 	input				sck_i, ssel_i, mosi_i,
 	output			miso_o,
 	output [7:0]	data_o,
-	output			ready_o
+	output			ready_o,
+	input [1:0]		spi_mode_i
 );
 
-parameter CPOL = 1'b0;
-parameter CPHA = 1'b0;
-
-wire sclk_w = sck_i ^ CPOL;
+wire sclk_w = sck_i ^ spi_mode_i[1];
 
 // sync sck_i to the FPGA clock using a 3-bits shift register
-reg [2:0] sck_r;
-wire sck_risingedge_w = (sck_r[2:1] == {CPHA, ~CPHA});
-wire sck_fallingedge_w = (sck_r[2:1] == {~CPHA, CPHA});
+reg [2:0] sck_r = 0;
+wire sck_risingedge_w = (sck_r[2:1] == {spi_mode_i[0], ~spi_mode_i[0]});
+wire sck_fallingedge_w = (sck_r[2:1] == {~spi_mode_i[0], spi_mode_i[0]});
 
 // same thing for ssel_i
-reg [2:0] ssel_r;
+reg [2:0] ssel_r = 3'b111;
 wire ssel_active_w = ~ssel_r[1];  // ssel_i is active low
 
 // and for mosi_i
-reg [1:0] mosi_r;
+reg [1:0] mosi_r = 0;
 
 // we handle SPI in 8-bits format, so we need a 3 bits counter to count the bits as they come in
 reg [2:0] bitcnt_r;

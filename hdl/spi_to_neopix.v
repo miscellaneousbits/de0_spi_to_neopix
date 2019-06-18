@@ -1,38 +1,39 @@
 // SPI to NeoPixel protocol converter
 
 module spi_to_neopix(
-	input		clk_i,
-	input		reset_i,
-	input		sck_i,
-	input		mosi_i,
-	output	miso_o,
-	input		ssel_i,
-	output	do_o,
-	output	ws_bsy_o
+	input			clk_i,
+	input			reset_i,
+	input			sck_i,
+	input			mosi_i,
+	output		miso_o,
+	input			ssel_i,
+	output		do_o,
+	output		ws_bsy_o,
+	input	[1:0]	spi_mode_i
 );
 
 parameter NUM_LEDS = 8;
 parameter SYSTEM_CLOCK = 50000000;
+
+localparam SPI_STATE_IDLE = 0;
+localparam SPI_STATE_BUSY = 1;
 
 wire [$clog2(NUM_LEDS):0]		bank_0_offset_w = 1'b0;
 wire [$clog2(NUM_LEDS):0]		bank_1_offset_w = NUM_LEDS[$clog2(NUM_LEDS):0];
 
 reg [$clog2(NUM_LEDS) - 1:0]	led_count_r[0:1];
 
-reg [$clog2(NUM_LEDS) - 1:0]	spi_addr_r;
-reg [$clog2(NUM_LEDS) - 1:0]	spi_addr_dly_r;
+reg [$clog2(NUM_LEDS) - 1:0]	spi_addr_r = 0;
+reg [$clog2(NUM_LEDS) - 1:0]	spi_addr_dly_r = 0;
 reg [1:0]							spi_byte_index_r;
-reg									spi_bank_r;
-reg [1:0]							spi_ssel_r;
+reg									spi_bank_r = 0;
+reg [1:0]							spi_ssel_r = 2'b11;
 reg [23:0]							spi_word_r;
-reg [1:0]							spi_state_r;
+reg [1:0]							spi_state_r = SPI_STATE_IDLE;
 
 wire [7:0]							spi_data_w;
 wire									spi_ready_r;
 wire [$clog2(NUM_LEDS):0]		spi_banked_addr_w = spi_addr_dly_r + (spi_bank_r ? bank_1_offset_w : bank_0_offset_w);
-
-localparam SPI_STATE_IDLE = 0;
-localparam SPI_STATE_BUSY = 1;
 
 reg [7:0]							ws_red_r, ws_green_r, ws_blue_r;
 reg									ws_bank_r;
@@ -40,7 +41,7 @@ wire									ws_data_req_w;
 wire [$clog2(NUM_LEDS) - 1:0] ws_addr_w;
 wire [$clog2(NUM_LEDS):0]		ws_banked_addr_w = ws_addr_w + (ws_bank_r ? bank_1_offset_w : bank_0_offset_w);
 
-reg									wren_r;
+reg									wren_r = 0;
 
 wire [31:0] q_w;
 
@@ -52,7 +53,7 @@ dpram dpram_inst_0(
 	.wren(wren_r),
 	.q(q_w));
 
-SPI_rx_slave SPI_rx_slave_inst_0 (
+SPI_slave SPI_slave_inst_0 (
 	.clk_i		(clk_i),
 	.reset_i		(reset_i),
 	.sck_i		(sck_i), 
@@ -60,7 +61,8 @@ SPI_rx_slave SPI_rx_slave_inst_0 (
 	.miso_o		(miso_o),
 	.ssel_i		(ssel_i), 
 	.data_o		(spi_data_w), 
-	.ready_o 	(spi_ready_r)
+	.ready_o 	(spi_ready_r),
+	.spi_mode_i	(spi_mode_i)
 	);
 	
 always @ (posedge clk_i) begin
@@ -123,7 +125,7 @@ ws2812_inst_0 (
 	.start_i			(spi_ssel_r == 2'b01),
 	.busy_o			(ws_bsy_o),
 	.data_request_o(ws_data_req_w),
-	.address_or		(ws_addr_w),				// The current LED number. This signal is incremented to the next
+	.address_o		(ws_addr_w),				// The current LED number. This signal is incremented to the next
 														// value two cycles after the last time data_request was asserted.
 	.red_i			(ws_red_r),					// 8-bit red data
 	.green_i			(ws_green_r),				// 8-bit green data
