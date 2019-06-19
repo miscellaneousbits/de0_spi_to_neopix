@@ -6,6 +6,7 @@ module tb;
    reg SCK = 0, MOSI = 0, SSEL0 = 1, SSEL1 = 1;
 	wire MISO;
 	reg [1:0] KEY = 2'b11;
+	reg [3:0] SW = 4'b0011;
    		
 // sck  IO_0_IN[0]
 // mosi IO_0_IN[1]
@@ -23,12 +24,14 @@ assign GPIO_0[1] = SSEL0;
 assign GPIO_0[2] = SSEL1;
 assign GPIO_0[7] = 0;
 
-de0_top uut (
+de0_top uut
+	(
 	.CLOCK_50(clk),
 	.GPIO_0(GPIO_0),
 	.GPIO_0_IN(GPIO_0_IN),
-	.KEY(KEY)
-);
+	.KEY(KEY),
+	.SW(SW)
+	);
    
   task do_write;
     input [7:0] data; 
@@ -67,24 +70,20 @@ de0_top uut (
 		MOSI = 0;
 		SSEL0 = 1;
 		SSEL1 = 1;
-		KEY = 3;
+		KEY = 2'b11;
+		#100 KEY[0] = 0;
+		#100 KEY[0] = 1;
 		
-		#200 SSEL0 = 0;
-		do_write(8'haa);
-		do_write(8'h55);
-		do_write(0);
-		do_write(8'haa);
-		do_write(8'h55);
-		do_write(0);
-		SSEL0 = 1;
-
 		#90800 SSEL0 = 0;
-		do_write(8'h00);
-		do_write(8'h55);
 		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
+		do_write(8'haa);
+		do_write(8'h55);
+		do_write(0);
 		SSEL0 = 1;
 
-		#100 SSEL1 = 0;
+		#90800 SSEL1 = 0;
 		do_write(8'haa);
 		do_write(8'h55);
 		do_write(0);
@@ -92,6 +91,12 @@ de0_top uut (
 		do_write(8'h55);
 		do_write(0);
 		SSEL1 = 1;
+
+		#90800 SSEL0 = 0;
+		do_write(8'h00);
+		do_write(8'h55);
+		do_write(8'haa);
+		SSEL0 = 1;
 
 		#90800 SSEL1 = 0;
 		do_write(8'h00);

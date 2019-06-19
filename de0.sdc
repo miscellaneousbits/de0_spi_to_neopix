@@ -1,15 +1,5 @@
-#**************************************************************
-# This .sdc file is created by Terasic Tool.
-# Users are recommended to modify this file to match users logic.
-#**************************************************************
-
-#**************************************************************
-# Create Clock
-#**************************************************************
 create_clock -period 20 [get_ports CLOCK_50]
-
-
-#**************************************************************
-# Set Clock Uncertainty
-#**************************************************************
+create_generated_clock -source CLOCK_50 -name CLOCK_25 -divide_by 2 [get_registers sysclk_r]
+	
 derive_clock_uncertainty
+derive_pll_clocks
